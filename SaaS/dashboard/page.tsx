@@ -1,3 +1,6 @@
+"use client"
+
+import { createClient, type Session } from "@supabase/supabase-js"
 import { AppSidebar } from "@/SaaS/dashboard/components/app-sidebar"
 import {
   Breadcrumb,
@@ -14,8 +17,60 @@ import {
   SidebarTrigger,
 } from "@/SaaS/dashboard/components/ui/sidebar"
 import { TooltipProvider } from "@/SaaS/dashboard/components/ui/tooltip"
+import * as React from "react"
+
+function getSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+  if (!url || !key) {
+    throw new Error("Missing Supabase env vars")
+  }
+
+  return { url, key }
+}
+
+function getUserDisplayName(session: Session) {
+  const meta = session.user.user_metadata as Record<string, unknown> | undefined
+  const candidates = [
+    typeof meta?.name === "string" ? meta.name : null,
+    typeof meta?.full_name === "string" ? meta.full_name : null,
+    typeof meta?.preferred_username === "string" ? meta.preferred_username : null,
+    session.user.email ?? null,
+  ].filter(Boolean) as string[]
+
+  return candidates[0] ?? "Usuario"
+}
 
 export default function Page() {
+  const [session, setSession] = React.useState<Session | null>(null)
+
+  React.useEffect(() => {
+    try {
+      const { url, key } = getSupabaseConfig()
+      const supabase = createClient(url, key)
+
+      supabase.auth.getSession().then(({ data }) => {
+        setSession(data.session ?? null)
+      })
+
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session)
+      })
+
+      return () => {
+        data.subscription.unsubscribe()
+      }
+    } catch {
+      return
+    }
+  }, [])
+
+  const name = session ? getUserDisplayName(session) : "Usuario"
+
   return (
     <TooltipProvider>
       <SidebarProvider>
@@ -31,13 +86,11 @@ export default function Page() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">
-                      Build Your Application
-                    </BreadcrumbLink>
+                    <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                    <BreadcrumbPage>{name}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>

@@ -12,13 +12,23 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/SaaS/dashboard/components/ui/sidebar"
-import { Command, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import {
+  Command,
+  TerminalSquareIcon,
+  BotIcon,
+  BookOpenIcon,
+  Settings2Icon,
+  FrameIcon,
+  PieChartIcon,
+  MapIcon,
+  CreditCardIcon,
+} from "lucide-react"
 
 // This is sample data.
 const data = {
   navMain: [
     {
-      title: "Playground",
+      title: "Dashboard",
       url: "#",
       icon: (
         <TerminalSquareIcon
@@ -27,21 +37,21 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "History",
+          title: "Resumen Mensual",
           url: "#",
         },
         {
-          title: "Starred",
+          title: "Tendencias",
           url: "#",
         },
         {
-          title: "Settings",
+          title: "Alertas e IA",
           url: "#",
         },
       ],
     },
     {
-      title: "Models",
+      title: "Movimientos",
       url: "#",
       icon: (
         <BotIcon
@@ -49,21 +59,21 @@ const data = {
       ),
       items: [
         {
-          title: "Genesis",
+          title: "Registrar",
           url: "#",
         },
         {
-          title: "Explorer",
+          title: "Historial",
           url: "#",
         },
         {
-          title: "Quantum",
+          title: "Categorías",
           url: "#",
         },
       ],
     },
     {
-      title: "Documentation",
+      title: "Presupuesto",
       url: "#",
       icon: (
         <BookOpenIcon
@@ -71,25 +81,43 @@ const data = {
       ),
       items: [
         {
-          title: "Introduction",
+          title: "Presupuestos Activos",
           url: "#",
         },
         {
-          title: "Get Started",
+          title: "Gastos Fijos",
           url: "#",
         },
         {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
+          title: "Metas de Ahorro",
           url: "#",
         },
       ],
     },
     {
-      title: "Settings",
+      title: "Cuentas",
+      url: "#",
+      icon: (
+        <CreditCardIcon
+        />
+      ),
+      items: [
+        {
+          title: "Mis Cuentas",
+          url: "#",
+        },
+        {
+          title: "Tarjetas de Crédito",
+          url: "#",
+        },
+        {
+          title: "Conexiones Bancarias",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Configuración",
       url: "#",
       icon: (
         <Settings2Icon
@@ -97,19 +125,7 @@ const data = {
       ),
       items: [
         {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
+          title: "Ajustes Generales",
           url: "#",
         },
       ],
