@@ -13,12 +13,24 @@ export async function POST(req: Request) {
     webSearch?: boolean
   } = await req.json()
 
+  if (model.includes("embedding")) {
+    return new Response(
+      "Ese modelo es de embeddings (vectores) y no sirve para chat. Usa un modelo de texto como google/gemini-2.0-flash u openai/gpt-4o.",
+      { status: 400 }
+    )
+  }
+
   const selectedModel = (webSearch ? "perplexity/sonar" : model) as unknown as LanguageModel
 
-  const result = streamText({
-    model: selectedModel,
-    messages: await convertToModelMessages(messages),
-  })
+  try {
+    const result = streamText({
+      model: selectedModel,
+      messages: await convertToModelMessages(messages),
+    })
 
-  return result.toUIMessageStreamResponse()
+    return result.toUIMessageStreamResponse()
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error"
+    return new Response(message, { status: 500 })
+  }
 }

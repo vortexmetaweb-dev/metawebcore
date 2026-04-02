@@ -75,8 +75,9 @@ const PromptInputAttachmentsDisplay = () => {
 };
 
 const models = [
-  { id: "gpt-4o", name: "GPT-4o" },
-  { id: "claude-opus-4-20250514", name: "Claude 4 Opus" },
+  { id: "openai/gpt-4o", name: "GPT-4o" },
+  { id: "anthropic/claude-opus-4-20250514", name: "Claude 4 Opus" },
+  { id: "google/gemini-2.0-flash", name: "Gemini 2.0 Flash" },
 ];
 
 async function* readSseData(stream: ReadableStream<Uint8Array>) {
@@ -339,6 +340,7 @@ const InputDemo = () => {
                       value={model}
                     >
                       <PromptInputSelectTrigger>
+                        <span className="text-xs">Modelo:</span>
                         <PromptInputSelectValue />
                       </PromptInputSelectTrigger>
                       <PromptInputSelectContent>
