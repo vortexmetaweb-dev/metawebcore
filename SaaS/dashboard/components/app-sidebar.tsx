@@ -41,12 +41,12 @@ const data = {
           url: "#",
         },
         {
-          title: "Tendencias",
+          title: "Notificaciones",
           url: "#",
         },
         {
-          title: "Alertas e IA",
-          url: "#",
+          title: "IA",
+          url: "/dashboard/ia",
         },
       ],
     },
