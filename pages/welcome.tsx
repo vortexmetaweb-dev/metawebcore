@@ -2,6 +2,8 @@ import { createClient, type Session } from "@supabase/supabase-js"
 import { useRouter } from "next/router"
 import * as React from "react"
 
+import { Button } from "@/SaaS/dashboard/components/ui/button"
+
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key =
@@ -97,8 +99,19 @@ export default function WelcomePage() {
           <h1 className="mt-6 text-5xl font-semibold tracking-tight text-white md:text-6xl">
             Bienvenido
           </h1>
-          <div className="mt-4 text-2xl font-medium text-white/85 md:text-3xl">
+          <div className="mx-auto mt-5 h-1 w-24 rounded-full bg-gradient-to-r from-[#87a9a6] via-[#647b84] to-[#cfd9d8]" />
+          <div className="mt-5 text-2xl font-medium text-[#cfd9d8] md:text-3xl">
             {name}
+          </div>
+
+          <div className="mt-10 flex justify-center">
+            <Button
+              type="button"
+              className="h-10 border border-white/15 bg-[#171f25]/55 px-7 text-white hover:bg-[#171f25]/70 focus-visible:ring-4 focus-visible:ring-[#87a9a6]/35"
+              onClick={() => router.push("/dashboard")}
+            >
+              Continuar
+            </Button>
           </div>
 
           {error ? (

@@ -4,7 +4,7 @@ import { useRouter } from "next/router"
 import { Command } from "lucide-react"
 import * as React from "react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/SaaS/dashboard/components/ui/button"
 
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
