@@ -1,6 +1,6 @@
 "use client";
 
-import { parseJsonEventStream, readUIMessageStream, uiMessageChunkSchema, type FileUIPart, type UIMessage, type UIMessageChunk } from "ai";
+import { readUIMessageStream, type FileUIPart, type UIMessage, type UIMessageChunk } from "ai";
 import {
   Attachment,
   AttachmentPreview,
@@ -75,9 +75,38 @@ const PromptInputAttachmentsDisplay = () => {
 };
 
 const models = [
-  { id: "openai/gpt-4o", name: "GPT-4o" },
-  { id: "anthropic/claude-opus-4-20250514", name: "Claude 4 Opus" },
+  { id: "gpt-4o", name: "GPT-4o" },
+  { id: "claude-opus-4-20250514", name: "Claude 4 Opus" },
 ];
+
+async function* readSseData(stream: ReadableStream<Uint8Array>) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    while (true) {
+      const eventEnd = buffer.indexOf("\n\n");
+      if (eventEnd === -1) break;
+
+      const rawEvent = buffer.slice(0, eventEnd);
+      buffer = buffer.slice(eventEnd + 2);
+
+      const lines = rawEvent.split("\n");
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trimStart();
+        if (data === "[DONE]") return;
+        if (data) yield data;
+      }
+    }
+  }
+}
 
 const InputDemo = () => {
   const [text, setText] = useState<string>("");
@@ -86,12 +115,14 @@ const InputDemo = () => {
 
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [status, setStatus] = useState<"ready" | "submitted" | "streaming" | "error">("ready");
+  const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const stop = () => {
     abortRef.current?.abort();
     abortRef.current = null;
     setStatus("ready");
+    setError(null);
   };
 
   const SubmitButton = () => {
@@ -117,6 +148,7 @@ const InputDemo = () => {
 
     stop();
     setStatus("submitted");
+    setError(null);
 
     const parts: UIMessage["parts"] = [];
     if (message.text) {
@@ -156,31 +188,28 @@ const InputDemo = () => {
       });
 
       if (!res.ok || !res.body) {
+        const details = await res.text().catch(() => "");
+        setError(details || `HTTP ${res.status}`);
         setStatus("error");
         return;
       }
 
       setStatus("streaming");
 
-      const parsedStream = parseJsonEventStream<UIMessageChunk>({
-        schema: uiMessageChunkSchema,
-        stream: res.body,
-      });
-
       const chunkStream = new ReadableStream<UIMessageChunk>({
-        start(controller) {
-          const reader = parsedStream.getReader();
-          const pump = async () => {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              if (value.success) {
-                controller.enqueue(value.value);
+        async start(controller) {
+          try {
+            for await (const data of readSseData(res.body!)) {
+              try {
+                controller.enqueue(JSON.parse(data) as UIMessageChunk);
+              } catch {
+                continue;
               }
             }
             controller.close();
-          };
-          pump().catch((e) => controller.error(e));
+          } catch (e) {
+            controller.error(e);
+          }
         },
       });
 
@@ -204,6 +233,7 @@ const InputDemo = () => {
         setStatus("ready");
         return;
       }
+      setError("No se pudo completar la respuesta de IA.");
       setStatus("error");
     } finally {
       if (abortRef.current === controller) {
@@ -263,6 +293,11 @@ const InputDemo = () => {
                 </ConversationContent>
                 <ConversationScrollButton />
               </Conversation>
+              {status === "error" && error ? (
+                <div className="px-4 pb-2 text-sm text-destructive">
+                  {error}
+                </div>
+              ) : null}
 
               <PromptInput
                 onSubmit={handleSubmit}
