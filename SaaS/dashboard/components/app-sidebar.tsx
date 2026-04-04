@@ -74,16 +74,16 @@ const data = {
       ),
       items: [
         {
-          title: "Registrar",
+          title: "Egresos",
           url: "/dashboard/registrar",
         },
         {
-          title: "Historial",
-          url: "#",
+          title: "Ingresos",
+          url: "/dashboard/ingresos",
         },
         {
-          title: "Categorías",
-          url: "#",
+          title: "Historial",
+          url: "/dashboard/historial",
         },
       ],
     },

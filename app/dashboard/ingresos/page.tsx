@@ -12,8 +12,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/SaaS/dashboard/components/ui/breadcrumb"
-import { Button } from "@/SaaS/dashboard/components/ui/button"
-import { Input } from "@/SaaS/dashboard/components/ui/input"
 import { Separator } from "@/SaaS/dashboard/components/ui/separator"
 import {
   SidebarInset,
@@ -21,16 +19,18 @@ import {
   SidebarTrigger,
 } from "@/SaaS/dashboard/components/ui/sidebar"
 import { TooltipProvider } from "@/SaaS/dashboard/components/ui/tooltip"
+import { Button } from "@/SaaS/dashboard/components/ui/button"
+import { Input } from "@/SaaS/dashboard/components/ui/input"
 import { Textarea } from "@/SaaS/dashboard/components/ui/textarea"
 
-type ExpenseDraft = {
+type IncomeDraft = {
   amount: string
   category: string
   date: string
   description: string
 }
 
-type ExpenseItem = ExpenseDraft & {
+type IncomeItem = IncomeDraft & {
   id: string
   createdAt: string
 }
@@ -56,30 +56,17 @@ function formatDateInputValue(date: Date) {
   return `${y}-${m}-${d}`
 }
 
-function getLocalStorageKey(userId?: string, tenantId?: string) {
+function getLocalStorageKey(userId?: string) {
   const uid = userId ?? "anon"
-  const tid = tenantId ?? "personal"
-  return `mwcore.egresos.${tid}.${uid}`
+  return `mwcore.ingresos.personal.${uid}`
 }
 
-function isMissingSchemaError(message: string) {
-  const msg = message.toLowerCase()
-  return (
-    msg.includes("does not exist") ||
-    msg.includes("schema cache") ||
-    msg.includes("could not find") ||
-    msg.includes("unknown column") ||
-    msg.includes("column") ||
-    msg.includes("relation")
-  )
-}
-
-function loadLocalExpenses(key: string): ExpenseItem[] {
+function loadLocalIncomes(key: string): IncomeItem[] {
   if (typeof window === "undefined") return []
   try {
     const raw = window.localStorage.getItem(key)
     if (!raw) return []
-    const parsed = JSON.parse(raw) as ExpenseItem[]
+    const parsed = JSON.parse(raw) as IncomeItem[]
     if (!Array.isArray(parsed)) return []
     return parsed
   } catch {
@@ -87,25 +74,16 @@ function loadLocalExpenses(key: string): ExpenseItem[] {
   }
 }
 
-function saveLocalExpenses(key: string, items: ExpenseItem[]) {
+function saveLocalIncomes(key: string, items: IncomeItem[]) {
   if (typeof window === "undefined") return
   window.localStorage.setItem(key, JSON.stringify(items))
 }
 
-const defaultCategories = [
-  "Comida",
-  "Transporte",
-  "Servicios",
-  "Renta",
-  "Salud",
-  "Educación",
-  "Entretenimiento",
-  "Otros",
-]
+const defaultCategories = ["Salario", "Ventas", "Servicios", "Intereses", "Otros"]
 
-const TABLE_NAME = process.env.NEXT_PUBLIC_EXPENSES_TABLE ?? "egresos"
+const TABLE_NAME = process.env.NEXT_PUBLIC_INCOMES_TABLE ?? "ingresos"
 
-export default function RegistrarEgresosPage() {
+export default function RegistrarIngresosPage() {
   const moneyFormatter = React.useMemo(
     () =>
       new Intl.NumberFormat("es-MX", {
@@ -115,29 +93,29 @@ export default function RegistrarEgresosPage() {
     []
   )
 
-  const formatExpenseMoney = React.useCallback(
+  const formatMoney = React.useCallback(
     (raw: string) => {
       const n = Number(raw)
       if (!Number.isFinite(n)) return raw
-      return `-${moneyFormatter.format(Math.abs(n))}`
+      return moneyFormatter.format(n)
     },
     [moneyFormatter]
   )
 
   const [session, setSession] = React.useState<Session | null>(null)
-  const [draft, setDraft] = React.useState<ExpenseDraft>(() => ({
+  const [draft, setDraft] = React.useState<IncomeDraft>(() => ({
     amount: "",
     category: defaultCategories[0],
     date: formatDateInputValue(new Date()),
     description: "",
   }))
-  const [items, setItems] = React.useState<ExpenseItem[]>(() => [])
+  const [items, setItems] = React.useState<IncomeItem[]>(() => [])
   const [busy, setBusy] = React.useState(false)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    setItems(loadLocalExpenses(getLocalStorageKey()))
+    setItems(loadLocalIncomes(getLocalStorageKey()))
   }, [])
 
   React.useEffect(() => {
@@ -175,35 +153,32 @@ export default function RegistrarEgresosPage() {
 
         const { data, error } = await supabase
           .from(TABLE_NAME)
-          .select("id, amount, category, description, spent_at, created_at")
+          .select("id, amount, category, description, received_at, created_at")
           .eq("user_id", session.user.id)
-          .order("spent_at", { ascending: false })
+          .order("received_at", { ascending: false })
           .limit(20)
 
         if (cancelled) return
 
         if (error) {
-          if (isMissingSchemaError(error.message)) {
-            setNotice("No se pudieron cargar egresos desde Supabase.")
-            setError(error.message)
-            return
-          }
-          setNotice("No se pudieron cargar egresos desde Supabase.")
+          setNotice("No se pudieron cargar ingresos desde Supabase.")
           setError(error.message)
           return
         }
 
-        const mapped: ExpenseItem[] = (data ?? []).map((row) => ({
+        const mapped: IncomeItem[] = (data ?? []).map((row) => ({
           amount: String((row as { amount?: unknown }).amount ?? ""),
           category: String((row as { category?: unknown }).category ?? ""),
           createdAt: String((row as { created_at?: unknown }).created_at ?? ""),
-          date: formatDateInputValue(new Date(String((row as { spent_at?: unknown }).spent_at))),
+          date: formatDateInputValue(
+            new Date(String((row as { received_at?: unknown }).received_at))
+          ),
           description: String((row as { description?: unknown }).description ?? ""),
           id: String((row as { id?: unknown }).id ?? ""),
         }))
 
         setItems(mapped)
-        saveLocalExpenses(getLocalStorageKey(session.user.id), mapped)
+        saveLocalIncomes(getLocalStorageKey(session.user.id), mapped)
       } catch {
         if (cancelled) return
         setNotice("No se pudieron cargar datos desde Supabase.")
@@ -237,25 +212,25 @@ export default function RegistrarEgresosPage() {
       if (session) {
         const { url, key } = getSupabaseConfig()
         const supabase = createClient(url, key)
-        const basePayload = {
+        const payload = {
           amount: amountNumber,
           category: draft.category,
           description: draft.description,
-          spent_at: new Date(`${draft.date}T00:00:00.000Z`).toISOString(),
+          received_at: new Date(`${draft.date}T00:00:00.000Z`).toISOString(),
           user_id: session.user.id,
         }
 
         const { data, error } = await supabase
           .from(TABLE_NAME)
-          .insert(basePayload)
-          .select("id, amount, category, description, spent_at, created_at")
+          .insert(payload)
+          .select("id, amount, category, description, received_at, created_at")
           .single()
 
         if (error || !data) {
           setError(error?.message ?? "Respuesta vacía de Supabase.")
           setNotice("No se pudo guardar en Supabase. Guardado localmente.")
 
-          const fallbackItem: ExpenseItem = {
+          const fallbackItem: IncomeItem = {
             ...draft,
             amount: String(amountNumber),
             createdAt: new Date().toISOString(),
@@ -264,29 +239,35 @@ export default function RegistrarEgresosPage() {
 
           setItems((prev) => {
             const next = [fallbackItem, ...prev]
-            saveLocalExpenses(getLocalStorageKey(session.user.id), next)
+            saveLocalIncomes(getLocalStorageKey(session.user.id), next)
             return next
           })
         } else {
-          const savedItem: ExpenseItem = {
-            amount: String(data.amount ?? amountNumber),
-            category: String(data.category ?? draft.category),
-            createdAt: String(data.created_at ?? new Date().toISOString()),
-            date: formatDateInputValue(new Date(String(data.spent_at))),
-            description: String(data.description ?? draft.description),
-            id: String(data.id),
+          const savedItem: IncomeItem = {
+            amount: String((data as { amount?: unknown }).amount ?? amountNumber),
+            category: String((data as { category?: unknown }).category ?? draft.category),
+            createdAt: String(
+              (data as { created_at?: unknown }).created_at ?? new Date().toISOString()
+            ),
+            date: formatDateInputValue(
+              new Date(String((data as { received_at?: unknown }).received_at))
+            ),
+            description: String(
+              (data as { description?: unknown }).description ?? draft.description
+            ),
+            id: String((data as { id?: unknown }).id ?? crypto.randomUUID()),
           }
 
           setItems((prev) => {
             const next = [savedItem, ...prev]
-            saveLocalExpenses(getLocalStorageKey(session.user.id), next)
+            saveLocalIncomes(getLocalStorageKey(session.user.id), next)
             return next
           })
 
-          setNotice("Egreso registrado en Supabase.")
+          setNotice("Ingreso registrado en Supabase.")
         }
       } else {
-        const localItem: ExpenseItem = {
+        const localItem: IncomeItem = {
           ...draft,
           amount: String(amountNumber),
           createdAt: new Date().toISOString(),
@@ -295,11 +276,11 @@ export default function RegistrarEgresosPage() {
 
         setItems((prev) => {
           const next = [localItem, ...prev]
-          saveLocalExpenses(getLocalStorageKey(), next)
+          saveLocalIncomes(getLocalStorageKey(), next)
           return next
         })
 
-        setNotice("Egreso guardado localmente (sin sesión).")
+        setNotice("Ingreso guardado localmente (sin sesión).")
       }
 
       setDraft((prev) => ({
@@ -333,7 +314,7 @@ export default function RegistrarEgresosPage() {
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>Registrar egresos</BreadcrumbPage>
+                    <BreadcrumbPage>Registrar ingresos</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
@@ -390,7 +371,7 @@ export default function RegistrarEgresosPage() {
                   <div className="text-sm font-medium">Descripción</div>
                   <Textarea
                     rows={3}
-                    placeholder="Ej. Supermercado, gasolina, etc."
+                    placeholder="Ej. Pago de cliente, salario, etc."
                     value={draft.description}
                     onChange={(e) =>
                       setDraft((prev) => ({
@@ -414,15 +395,13 @@ export default function RegistrarEgresosPage() {
                   </Button>
                 </div>
 
-                {error ? (
-                  <div className="text-sm text-destructive">{error}</div>
-                ) : null}
+                {error ? <div className="text-sm text-destructive">{error}</div> : null}
               </form>
 
               <div className="rounded-xl bg-muted/40 p-3">
                 {items.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
-                    Aún no hay egresos registrados.
+                    Aún no hay ingresos registrados.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -448,7 +427,7 @@ export default function RegistrarEgresosPage() {
                           {items.map((it) => (
                             <tr key={it.id}>
                               <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                                {formatExpenseMoney(it.amount)}
+                                {formatMoney(it.amount)}
                               </td>
                               <td className="px-3 py-2 tabular-nums">{it.date}</td>
                               <td className="px-3 py-2">{it.category}</td>
