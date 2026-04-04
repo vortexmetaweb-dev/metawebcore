@@ -77,14 +77,28 @@ function loadLocalJson<T>(key: string): T[] {
   }
 }
 
-function getLocalExpensesKey(userId?: string) {
+function getLocalExpensesKey(userId?: string, tenantId?: string) {
   const uid = userId ?? "anon"
-  return `mwcore.egresos.personal.${uid}`
+  const tid = tenantId ?? "personal"
+  return `mwcore.egresos.${tid}.${uid}`
 }
 
-function getLocalIncomesKey(userId?: string) {
+function getLocalIncomesKey(userId?: string, tenantId?: string) {
   const uid = userId ?? "anon"
-  return `mwcore.ingresos.personal.${uid}`
+  const tid = tenantId ?? "personal"
+  return `mwcore.ingresos.${tid}.${uid}`
+}
+
+function isMissingSchemaError(message: string) {
+  const msg = message.toLowerCase()
+  return (
+    msg.includes("does not exist") ||
+    msg.includes("schema cache") ||
+    msg.includes("could not find") ||
+    msg.includes("unknown column") ||
+    msg.includes("column") ||
+    msg.includes("relation")
+  )
 }
 
 function formatDateInputValue(date: Date) {
@@ -96,6 +110,9 @@ function formatDateInputValue(date: Date) {
 
 const EXPENSES_TABLE_NAME = process.env.NEXT_PUBLIC_EXPENSES_TABLE ?? "egresos"
 const INCOMES_TABLE_NAME = process.env.NEXT_PUBLIC_INCOMES_TABLE ?? "ingresos"
+const TENANTS_TABLE = process.env.NEXT_PUBLIC_TENANTS_TABLE ?? "tenants"
+const TENANT_MEMBERS_TABLE =
+  process.env.NEXT_PUBLIC_TENANT_MEMBERS_TABLE ?? "tenant_members"
 
 export default function HistorialPage() {
   const moneyFormatter = React.useMemo(
@@ -118,13 +135,16 @@ export default function HistorialPage() {
   )
 
   const [session, setSession] = React.useState<Session | null>(null)
+  const [tenantId, setTenantId] = React.useState<string | null>(null)
   const [items, setItems] = React.useState<MovementItem[]>(() => [])
   const [notice, setNotice] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    const localExpenses = loadLocalJson<ExpenseLocalItem>(getLocalExpensesKey())
-    const localIncomes = loadLocalJson<IncomeLocalItem>(getLocalIncomesKey())
+    const uid = session?.user.id
+    const tid = tenantId ?? "personal"
+    const localExpenses = loadLocalJson<ExpenseLocalItem>(getLocalExpensesKey(uid, tid))
+    const localIncomes = loadLocalJson<IncomeLocalItem>(getLocalIncomesKey(uid, tid))
 
     const merged: MovementItem[] = [
       ...localExpenses.map((e) => ({
@@ -149,7 +169,7 @@ export default function HistorialPage() {
 
     merged.sort((a, b) => b.date.localeCompare(a.date))
     setItems(merged)
-  }, [])
+  }, [session, tenantId])
 
   React.useEffect(() => {
     try {
@@ -174,6 +194,7 @@ export default function HistorialPage() {
 
   React.useEffect(() => {
     if (!session) {
+      setTenantId(null)
       return
     }
 
@@ -186,21 +207,93 @@ export default function HistorialPage() {
         const { url, key } = getSupabaseConfig()
         const supabase = createClient(url, key)
 
-        const [{ data: expenseRows, error: expenseError }, { data: incomeRows, error: incomeError }] =
-          await Promise.all([
-            supabase
-              .from(EXPENSES_TABLE_NAME)
-              .select("id, amount, category, description, spent_at, created_at")
-              .eq("user_id", session.user.id)
-              .order("spent_at", { ascending: false })
-              .limit(50),
-            supabase
-              .from(INCOMES_TABLE_NAME)
-              .select("id, amount, category, description, received_at, created_at")
-              .eq("user_id", session.user.id)
-              .order("received_at", { ascending: false })
-              .limit(50),
-          ])
+        let resolvedTenantId: string | null = null
+
+        const { data: memberRows, error: memberError } = await supabase
+          .from(TENANT_MEMBERS_TABLE)
+          .select("tenant_id")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+
+        if (cancelled) return
+
+        if (memberError) {
+          if (!isMissingSchemaError(memberError.message)) {
+            setNotice("No se pudo cargar el historial completo desde Supabase.")
+            setError(memberError.message)
+            return
+          }
+        } else {
+          const first = (memberRows ?? [])[0] as { tenant_id?: unknown } | undefined
+          const existing = first?.tenant_id ? String(first.tenant_id) : ""
+          if (existing) {
+            resolvedTenantId = existing
+          } else {
+            const { data: createdTenant, error: createTenantError } = await supabase
+              .from(TENANTS_TABLE)
+              .insert({ name: "Personal" })
+              .select("id")
+              .single()
+
+            if (cancelled) return
+
+            if (createTenantError) {
+              setNotice("No se pudo cargar el historial completo desde Supabase.")
+              setError(createTenantError.message)
+              return
+            }
+
+            resolvedTenantId = String((createdTenant as { id?: unknown }).id ?? "")
+            if (!resolvedTenantId) {
+              setNotice("No se pudo cargar el historial completo desde Supabase.")
+              setError("Tenant inválido.")
+              return
+            }
+
+            const { error: memberInsertError } = await supabase
+              .from(TENANT_MEMBERS_TABLE)
+              .insert({
+                role: "owner",
+                tenant_id: resolvedTenantId,
+                user_id: session.user.id,
+              })
+
+            if (cancelled) return
+
+            if (memberInsertError) {
+              setNotice("No se pudo cargar el historial completo desde Supabase.")
+              setError(memberInsertError.message)
+              return
+            }
+          }
+        }
+
+        setTenantId(resolvedTenantId)
+
+        const expensesQuery = supabase
+          .from(EXPENSES_TABLE_NAME)
+          .select("id, amount, category, description, spent_at, created_at")
+          .order("spent_at", { ascending: false })
+          .limit(50)
+
+        const incomesQuery = supabase
+          .from(INCOMES_TABLE_NAME)
+          .select("id, amount, category, description, received_at, created_at")
+          .order("received_at", { ascending: false })
+          .limit(50)
+
+        const [
+          { data: expenseRows, error: expenseError },
+          { data: incomeRows, error: incomeError },
+        ] = await Promise.all([
+          resolvedTenantId && resolvedTenantId !== "null"
+            ? expensesQuery.eq("tenant_id", resolvedTenantId)
+            : expensesQuery.eq("user_id", session.user.id),
+          resolvedTenantId && resolvedTenantId !== "null"
+            ? incomesQuery.eq("tenant_id", resolvedTenantId)
+            : incomesQuery.eq("user_id", session.user.id),
+        ])
 
         if (cancelled) return
 
@@ -379,4 +472,3 @@ export default function HistorialPage() {
     </TooltipProvider>
   )
 }
-

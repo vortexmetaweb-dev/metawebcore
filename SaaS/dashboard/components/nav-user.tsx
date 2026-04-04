@@ -72,6 +72,7 @@ function getInitials(label: string) {
 export function NavUser() {
   const { isMobile } = useSidebar()
   const [session, setSession] = React.useState<Session | null>(null)
+  const [loggingOut, setLoggingOut] = React.useState(false)
 
   React.useEffect(() => {
     try {
@@ -95,11 +96,25 @@ export function NavUser() {
   }, [])
 
   const handleLogout = React.useCallback(async () => {
+    if (typeof window === "undefined") return
+    setLoggingOut(true)
     try {
       const { url, key } = getSupabaseConfig()
       const supabase = createClient(url, key)
       await supabase.auth.signOut()
+      try {
+        for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+          const k = window.localStorage.key(i)
+          if (!k) continue
+          if (k.startsWith("mwcore.egresos.") || k.startsWith("mwcore.ingresos.")) {
+            window.localStorage.removeItem(k)
+          }
+        }
+      } catch {
+        return
+      }
     } finally {
+      setLoggingOut(false)
       window.location.href = "/auth"
     }
   }, [])
@@ -175,6 +190,8 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              disabled={!session || loggingOut}
+              className="cursor-pointer"
               onSelect={(e) => {
                 e.preventDefault()
                 void handleLogout()
@@ -182,7 +199,7 @@ export function NavUser() {
             >
               <LogOutIcon
               />
-              Log out
+              {loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

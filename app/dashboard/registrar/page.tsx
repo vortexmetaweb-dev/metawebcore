@@ -104,6 +104,9 @@ const defaultCategories = [
 ]
 
 const TABLE_NAME = process.env.NEXT_PUBLIC_EXPENSES_TABLE ?? "egresos"
+const TENANTS_TABLE = process.env.NEXT_PUBLIC_TENANTS_TABLE ?? "tenants"
+const TENANT_MEMBERS_TABLE =
+  process.env.NEXT_PUBLIC_TENANT_MEMBERS_TABLE ?? "tenant_members"
 
 export default function RegistrarEgresosPage() {
   const moneyFormatter = React.useMemo(
@@ -125,6 +128,7 @@ export default function RegistrarEgresosPage() {
   )
 
   const [session, setSession] = React.useState<Session | null>(null)
+  const [tenantId, setTenantId] = React.useState<string | null>(null)
   const [draft, setDraft] = React.useState<ExpenseDraft>(() => ({
     amount: "",
     category: defaultCategories[0],
@@ -163,6 +167,7 @@ export default function RegistrarEgresosPage() {
 
   React.useEffect(() => {
     if (!session) {
+      setTenantId(null)
       return
     }
 
@@ -173,12 +178,91 @@ export default function RegistrarEgresosPage() {
         const { url, key } = getSupabaseConfig()
         const supabase = createClient(url, key)
 
-        const { data, error } = await supabase
+        let resolvedTenantId: string | null = null
+
+        const { data: memberRows, error: memberError } = await supabase
+          .from(TENANT_MEMBERS_TABLE)
+          .select("tenant_id")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+
+        if (cancelled) return
+
+        if (memberError) {
+          if (!isMissingSchemaError(memberError.message)) {
+            setNotice("No se pudieron cargar datos desde Supabase.")
+            setError(memberError.message)
+            return
+          }
+        } else {
+          const first = (memberRows ?? [])[0] as { tenant_id?: unknown } | undefined
+          const existing = first?.tenant_id ? String(first.tenant_id) : ""
+          if (existing) {
+            resolvedTenantId = existing
+          } else {
+            const { data: createdTenant, error: createTenantError } = await supabase
+              .from(TENANTS_TABLE)
+              .insert({ name: "Personal" })
+              .select("id")
+              .single()
+
+            if (cancelled) return
+
+            if (createTenantError) {
+              setNotice("No se pudieron cargar datos desde Supabase.")
+              setError(createTenantError.message)
+              return
+            }
+
+            resolvedTenantId = String((createdTenant as { id?: unknown }).id ?? "")
+            if (!resolvedTenantId) {
+              setNotice("No se pudieron cargar datos desde Supabase.")
+              setError("Tenant inválido.")
+              return
+            }
+
+            const { error: memberInsertError } = await supabase
+              .from(TENANT_MEMBERS_TABLE)
+              .insert({
+                role: "owner",
+                tenant_id: resolvedTenantId,
+                user_id: session.user.id,
+              })
+
+            if (cancelled) return
+
+            if (memberInsertError) {
+              setNotice("No se pudieron cargar datos desde Supabase.")
+              setError(memberInsertError.message)
+              return
+            }
+          }
+        }
+
+        setTenantId(resolvedTenantId)
+
+        const baseQuery = supabase
           .from(TABLE_NAME)
           .select("id, amount, category, description, spent_at, created_at")
-          .eq("user_id", session.user.id)
           .order("spent_at", { ascending: false })
           .limit(20)
+
+        let { data, error } =
+          resolvedTenantId && resolvedTenantId !== "null"
+            ? await baseQuery.eq("tenant_id", resolvedTenantId)
+            : await baseQuery.eq("user_id", session.user.id)
+
+        if (cancelled) return
+
+        if (
+          error &&
+          resolvedTenantId &&
+          resolvedTenantId !== "null" &&
+          isMissingSchemaError(error.message)
+        ) {
+          ;({ data, error } = await baseQuery.eq("user_id", session.user.id))
+        }
 
         if (cancelled) return
 
@@ -203,7 +287,10 @@ export default function RegistrarEgresosPage() {
         }))
 
         setItems(mapped)
-        saveLocalExpenses(getLocalStorageKey(session.user.id), mapped)
+        saveLocalExpenses(
+          getLocalStorageKey(session.user.id, resolvedTenantId ?? "personal"),
+          mapped
+        )
       } catch {
         if (cancelled) return
         setNotice("No se pudieron cargar datos desde Supabase.")
@@ -245,11 +332,29 @@ export default function RegistrarEgresosPage() {
           user_id: session.user.id,
         }
 
-        const { data, error } = await supabase
+        const payload =
+          tenantId && tenantId !== "null"
+            ? { ...basePayload, tenant_id: tenantId }
+            : basePayload
+
+        let { data, error } = await supabase
           .from(TABLE_NAME)
-          .insert(basePayload)
+          .insert(payload)
           .select("id, amount, category, description, spent_at, created_at")
           .single()
+
+        if (
+          error &&
+          tenantId &&
+          tenantId !== "null" &&
+          isMissingSchemaError(error.message)
+        ) {
+          ;({ data, error } = await supabase
+            .from(TABLE_NAME)
+            .insert(basePayload)
+            .select("id, amount, category, description, spent_at, created_at")
+            .single())
+        }
 
         if (error || !data) {
           setError(error?.message ?? "Respuesta vacía de Supabase.")
@@ -264,7 +369,10 @@ export default function RegistrarEgresosPage() {
 
           setItems((prev) => {
             const next = [fallbackItem, ...prev]
-            saveLocalExpenses(getLocalStorageKey(session.user.id), next)
+            saveLocalExpenses(
+              getLocalStorageKey(session.user.id, tenantId ?? "personal"),
+              next
+            )
             return next
           })
         } else {
@@ -279,7 +387,10 @@ export default function RegistrarEgresosPage() {
 
           setItems((prev) => {
             const next = [savedItem, ...prev]
-            saveLocalExpenses(getLocalStorageKey(session.user.id), next)
+            saveLocalExpenses(
+              getLocalStorageKey(session.user.id, tenantId ?? "personal"),
+              next
+            )
             return next
           })
 
