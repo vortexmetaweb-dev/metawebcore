@@ -94,6 +94,16 @@ export function NavUser() {
     }
   }, [])
 
+  const handleLogout = React.useCallback(async () => {
+    try {
+      const { url, key } = getSupabaseConfig()
+      const supabase = createClient(url, key)
+      await supabase.auth.signOut()
+    } finally {
+      window.location.href = "/auth"
+    }
+  }, [])
+
   const name = session ? getUserDisplayName(session) : "Usuario"
   const email = session?.user.email ?? ""
   const avatarUrl = session ? getUserAvatarUrl(session) : ""
@@ -164,7 +174,12 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault()
+                void handleLogout()
+              }}
+            >
               <LogOutIcon
               />
               Log out
