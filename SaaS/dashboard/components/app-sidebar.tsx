@@ -119,11 +119,11 @@ const data = {
       items: [
         {
           title: "Mis Cuentas",
-          url: "#",
+          url: "/dashboard/cuentas",
         },
         {
           title: "Tarjetas de Crédito",
-          url: "#",
+          url: "/dashboard/cuentas",
         },
         {
           title: "Conexiones Bancarias",
