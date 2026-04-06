@@ -214,17 +214,19 @@ function getDefaultTenantName(session: Session) {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const supabase = React.useMemo(() => {
+    const cfg = getSupabaseConfig()
+    if (!cfg) return null
+    return createClient(cfg.url, cfg.key)
+  }, [])
+
   const { isMobile } = useSidebar()
   const [session, setSession] = React.useState<Session | null>(null)
   const [tenants, setTenants] = React.useState<Tenant[]>([])
   const [activeTenantId, setActiveTenantId] = React.useState<string>("")
 
   React.useEffect(() => {
-    const cfg = getSupabaseConfig()
-    if (!cfg) {
-      return
-    }
-    const supabase = createClient(cfg.url, cfg.key)
+    if (!supabase) return
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null)
@@ -237,20 +239,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return () => {
       data.subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   React.useEffect(() => {
-    if (!session) {
+    if (!supabase || !session) {
       setTenants([])
       setActiveTenantId("")
       return
     }
-
-    const cfg = getSupabaseConfig()
-    if (!cfg) {
-      return
-    }
-    const supabase = createClient(cfg.url, cfg.key)
 
     let cancelled = false
 
@@ -348,7 +344,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return () => {
       cancelled = true
     }
-  }, [session])
+  }, [session, supabase])
 
   const activeTenant = React.useMemo(() => {
     if (!activeTenantId) return null

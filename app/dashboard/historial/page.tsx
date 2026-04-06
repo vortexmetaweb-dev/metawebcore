@@ -89,6 +89,10 @@ function getLocalIncomesKey(userId?: string, tenantId?: string) {
   return `mwcore.ingresos.${tid}.${uid}`
 }
 
+function getActiveTenantKey(userId: string) {
+  return `mwcore.activeTenant.${userId}`
+}
+
 function isMissingSchemaError(message: string) {
   const msg = message.toLowerCase()
   return (
@@ -115,6 +119,15 @@ const TENANT_MEMBERS_TABLE =
   process.env.NEXT_PUBLIC_TENANT_MEMBERS_TABLE ?? "tenant_members"
 
 export default function HistorialPage() {
+  const supabase = React.useMemo(() => {
+    try {
+      const { url, key } = getSupabaseConfig()
+      return createClient(url, key)
+    } catch {
+      return null
+    }
+  }, [])
+
   const moneyFormatter = React.useMemo(
     () =>
       new Intl.NumberFormat("es-MX", {
@@ -172,28 +185,23 @@ export default function HistorialPage() {
   }, [session, tenantId])
 
   React.useEffect(() => {
-    try {
-      const { url, key } = getSupabaseConfig()
-      const supabase = createClient(url, key)
+    if (!supabase) return
 
-      supabase.auth.getSession().then(({ data }) => {
-        setSession(data.session ?? null)
-      })
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null)
+    })
 
-      const { data } = supabase.auth.onAuthStateChange((_event, s) => {
-        setSession(s)
-      })
+    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s)
+    })
 
-      return () => {
-        data.subscription.unsubscribe()
-      }
-    } catch {
-      return
+    return () => {
+      data.subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   React.useEffect(() => {
-    if (!session) {
+    if (!supabase || !session) {
       setTenantId(null)
       return
     }
@@ -204,8 +212,10 @@ export default function HistorialPage() {
       setNotice(null)
       setError(null)
       try {
-        const { url, key } = getSupabaseConfig()
-        const supabase = createClient(url, key)
+        const stored =
+          typeof window === "undefined"
+            ? null
+            : window.localStorage.getItem(getActiveTenantKey(session.user.id))
 
         let resolvedTenantId: string | null = null
 
@@ -214,7 +224,6 @@ export default function HistorialPage() {
           .select("tenant_id")
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: true })
-          .limit(1)
 
         if (cancelled) return
 
@@ -225,10 +234,15 @@ export default function HistorialPage() {
             return
           }
         } else {
-          const first = (memberRows ?? [])[0] as { tenant_id?: unknown } | undefined
-          const existing = first?.tenant_id ? String(first.tenant_id) : ""
-          if (existing) {
-            resolvedTenantId = existing
+          const tenantIds = (memberRows ?? [])
+            .map((r) => String((r as { tenant_id?: unknown }).tenant_id ?? ""))
+            .filter(Boolean)
+
+          const preferred =
+            stored && tenantIds.includes(stored) ? stored : tenantIds[0] ?? ""
+
+          if (preferred) {
+            resolvedTenantId = preferred
           } else {
             const { data: createdTenant, error: createTenantError } = await supabase
               .from(TENANTS_TABLE)
@@ -270,6 +284,9 @@ export default function HistorialPage() {
         }
 
         setTenantId(resolvedTenantId)
+        if (resolvedTenantId && typeof window !== "undefined") {
+          window.localStorage.setItem(getActiveTenantKey(session.user.id), resolvedTenantId)
+        }
 
         const expensesQuery = supabase
           .from(EXPENSES_TABLE_NAME)
@@ -343,7 +360,7 @@ export default function HistorialPage() {
     return () => {
       cancelled = true
     }
-  }, [session])
+  }, [session, supabase])
 
   const totals = React.useMemo(() => {
     let ingresos = 0

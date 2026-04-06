@@ -62,6 +62,10 @@ function getLocalStorageKey(userId?: string, tenantId?: string) {
   return `mwcore.ingresos.${tid}.${uid}`
 }
 
+function getActiveTenantKey(userId: string) {
+  return `mwcore.activeTenant.${userId}`
+}
+
 function loadLocalIncomes(key: string): IncomeItem[] {
   if (typeof window === "undefined") return []
   try {
@@ -100,6 +104,15 @@ const TENANT_MEMBERS_TABLE =
   process.env.NEXT_PUBLIC_TENANT_MEMBERS_TABLE ?? "tenant_members"
 
 export default function RegistrarIngresosPage() {
+  const supabase = React.useMemo(() => {
+    try {
+      const { url, key } = getSupabaseConfig()
+      return createClient(url, key)
+    } catch {
+      return null
+    }
+  }, [])
+
   const moneyFormatter = React.useMemo(
     () =>
       new Intl.NumberFormat("es-MX", {
@@ -136,28 +149,23 @@ export default function RegistrarIngresosPage() {
   }, [])
 
   React.useEffect(() => {
-    try {
-      const { url, key } = getSupabaseConfig()
-      const supabase = createClient(url, key)
+    if (!supabase) return
 
-      supabase.auth.getSession().then(({ data }) => {
-        setSession(data.session ?? null)
-      })
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null)
+    })
 
-      const { data } = supabase.auth.onAuthStateChange((_event, s) => {
-        setSession(s)
-      })
+    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s)
+    })
 
-      return () => {
-        data.subscription.unsubscribe()
-      }
-    } catch {
-      return
+    return () => {
+      data.subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   React.useEffect(() => {
-    if (!session) {
+    if (!supabase || !session) {
       setTenantId(null)
       return
     }
@@ -166,8 +174,10 @@ export default function RegistrarIngresosPage() {
 
     const run = async () => {
       try {
-        const { url, key } = getSupabaseConfig()
-        const supabase = createClient(url, key)
+        const stored =
+          typeof window === "undefined"
+            ? null
+            : window.localStorage.getItem(getActiveTenantKey(session.user.id))
 
         let resolvedTenantId: string | null = null
 
@@ -176,7 +186,6 @@ export default function RegistrarIngresosPage() {
           .select("tenant_id")
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: true })
-          .limit(1)
 
         if (cancelled) return
 
@@ -187,10 +196,15 @@ export default function RegistrarIngresosPage() {
             return
           }
         } else {
-          const first = (memberRows ?? [])[0] as { tenant_id?: unknown } | undefined
-          const existing = first?.tenant_id ? String(first.tenant_id) : ""
-          if (existing) {
-            resolvedTenantId = existing
+          const tenantIds = (memberRows ?? [])
+            .map((r) => String((r as { tenant_id?: unknown }).tenant_id ?? ""))
+            .filter(Boolean)
+
+          const preferred =
+            stored && tenantIds.includes(stored) ? stored : tenantIds[0] ?? ""
+
+          if (preferred) {
+            resolvedTenantId = preferred
           } else {
             const { data: createdTenant, error: createTenantError } = await supabase
               .from(TENANTS_TABLE)
@@ -232,6 +246,9 @@ export default function RegistrarIngresosPage() {
         }
 
         setTenantId(resolvedTenantId)
+        if (resolvedTenantId && typeof window !== "undefined") {
+          window.localStorage.setItem(getActiveTenantKey(session.user.id), resolvedTenantId)
+        }
 
         const baseQuery = supabase
           .from(TABLE_NAME)
@@ -290,7 +307,7 @@ export default function RegistrarIngresosPage() {
     return () => {
       cancelled = true
     }
-  }, [session])
+  }, [session, supabase])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -306,12 +323,40 @@ export default function RegistrarIngresosPage() {
       setError("Selecciona una fecha.")
       return
     }
+    if (session && (!tenantId || tenantId === "null")) {
+      setError("No se pudo determinar el tenant (espacio).")
+      setNotice("No se pudo guardar en Supabase. Guardado localmente.")
+
+      const fallbackItem: IncomeItem = {
+        ...draft,
+        amount: String(amountNumber),
+        createdAt: new Date().toISOString(),
+        id: crypto.randomUUID(),
+      }
+
+      setItems((prev) => {
+        const next = [fallbackItem, ...prev]
+        saveLocalIncomes(getLocalStorageKey(session.user.id, tenantId ?? "personal"), next)
+        return next
+      })
+
+      setDraft((prev) => ({
+        ...prev,
+        amount: "",
+        description: "",
+      }))
+      return
+    }
 
     setBusy(true)
     try {
       if (session) {
-        const { url, key } = getSupabaseConfig()
-        const supabase = createClient(url, key)
+        if (!supabase) {
+          setError("Supabase no está configurado.")
+          setNotice("No se pudo guardar en Supabase. Guardado localmente.")
+          return
+        }
+
         const payload = {
           amount: amountNumber,
           category: draft.category,
@@ -320,10 +365,7 @@ export default function RegistrarIngresosPage() {
           user_id: session.user.id,
         }
 
-        const insertPayload =
-          tenantId && tenantId !== "null"
-            ? { ...payload, tenant_id: tenantId }
-            : payload
+        const insertPayload = { ...payload, tenant_id: tenantId }
 
         let { data, error } = await supabase
           .from(TABLE_NAME)
