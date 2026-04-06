@@ -1,8 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { cx, sortCx } from "@/lib/utils/cx";
-import { MastercardIcon, MastercardIconWhite, PaypassIcon } from "./icons";
+import {
+    AmexIcon,
+    AmexIconWhite,
+    MastercardIcon,
+    MastercardIconWhite,
+    PaypassIcon,
+    VisaIcon,
+    VisaIconWhite,
+} from "./icons";
 
 const styles = sortCx({
     // Normal
@@ -111,6 +119,8 @@ const CARD_WITH_COLOR_LOGO = ["brand-dark", "brand-light", "gray-dark", "gray-li
 
 type CreditCardType = (typeof _NORMAL_TYPES)[number] | (typeof STRIP_TYPES)[number] | (typeof VERTICAL_STRIP_TYPES)[number];
 
+type CardNetwork = "mastercard" | "visa" | "amex" | "unknown";
+
 interface CreditCardProps {
     company?: string;
     cardNumber?: string;
@@ -119,6 +129,9 @@ interface CreditCardProps {
     type?: CreditCardType;
     className?: string;
     width?: number;
+    bankLogo?: ReactNode;
+    network?: CardNetwork;
+    backgroundClassName?: string;
 }
 
 const calculateScale = (desiredWidth: number, originalWidth: number, originalHeight: number) => {
@@ -136,6 +149,18 @@ const calculateScale = (desiredWidth: number, originalWidth: number, originalHei
     };
 };
 
+const NETWORK_WITH_COLOR_LOGO = ["mastercard", "visa", "amex"] as const;
+
+function NetworkLogo({ network, useWhite }: { network: CardNetwork; useWhite: boolean }) {
+    if (network === "visa") {
+        return useWhite ? <VisaIconWhite /> : <VisaIcon />;
+    }
+    if (network === "amex") {
+        return useWhite ? <AmexIconWhite /> : <AmexIcon />;
+    }
+    return useWhite ? <MastercardIconWhite /> : <MastercardIcon />;
+}
+
 export const CreditCard = ({
     company = "Untitled.",
     cardNumber = "1234 1234 1234 1234",
@@ -144,6 +169,9 @@ export const CreditCard = ({
     type = "brand-dark",
     className,
     width,
+    bankLogo,
+    network = "mastercard",
+    backgroundClassName,
 }: CreditCardProps) => {
     const originalWidth = 316;
     const originalHeight = 190;
@@ -173,7 +201,11 @@ export const CreditCard = ({
                     width: `${originalWidth}px`,
                     height: `${originalHeight}px`,
                 }}
-                className={cx("absolute top-0 left-0 flex origin-top-left flex-col justify-between overflow-hidden rounded-2xl p-4", styles[type].root)}
+                className={cx(
+                    "absolute top-0 left-0 flex origin-top-left flex-col justify-between overflow-hidden rounded-2xl p-4",
+                    styles[type].root,
+                    backgroundClassName,
+                )}
             >
                 {/* Horizontal strip */}
                 {STRIP_TYPES.includes(type as (typeof STRIP_TYPES)[number]) && (
@@ -194,7 +226,9 @@ export const CreditCard = ({
                 )}
 
                 <div className="relative flex items-start justify-between px-1 pt-1">
-                    <div className={cx("text-md leading-[normal] font-semibold", styles[type].company)}>{company}</div>
+                    <div className={cx("text-md leading-[normal] font-semibold", styles[type].company)}>
+                        {bankLogo ?? company}
+                    </div>
 
                     <PaypassIcon className={styles[type].paypassIcon} />
                 </div>
@@ -228,7 +262,11 @@ export const CreditCard = ({
                     </div>
 
                     <div className={cx("flex h-8 w-11.5 shrink-0 items-center justify-center rounded", styles[type].cardTypeRoot)}>
-                        {CARD_WITH_COLOR_LOGO.includes(type as (typeof CARD_WITH_COLOR_LOGO)[number]) ? <MastercardIcon /> : <MastercardIconWhite />}
+                        {NETWORK_WITH_COLOR_LOGO.includes(network as (typeof NETWORK_WITH_COLOR_LOGO)[number]) ? (
+                            <NetworkLogo network={network} useWhite={!CARD_WITH_COLOR_LOGO.includes(type as (typeof CARD_WITH_COLOR_LOGO)[number])} />
+                        ) : (
+                            <NetworkLogo network="unknown" useWhite={!CARD_WITH_COLOR_LOGO.includes(type as (typeof CARD_WITH_COLOR_LOGO)[number])} />
+                        )}
                     </div>
                 </div>
             </div>

@@ -9,7 +9,6 @@ import {
 } from "@/SaaS/dashboard/components/ai-elements/attachments";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/SaaS/dashboard/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/SaaS/dashboard/components/ai-elements/message";
-import { AppSidebar } from "@/SaaS/dashboard/components/app-sidebar";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -41,12 +40,7 @@ import {
   BreadcrumbSeparator,
 } from "@/SaaS/dashboard/components/ui/breadcrumb";
 import { Separator } from "@/SaaS/dashboard/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/SaaS/dashboard/components/ui/sidebar";
-import { TooltipProvider } from "@/SaaS/dashboard/components/ui/tooltip";
+import { SidebarTrigger } from "@/SaaS/dashboard/components/ui/sidebar";
 import { GlobeIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { nanoid } from "nanoid";
@@ -109,7 +103,7 @@ async function* readSseData(stream: ReadableStream<Uint8Array>) {
   }
 }
 
-const InputDemo = () => {
+export const ChatPage = ({ pageTitle }: { pageTitle: string }) => {
   const [text, setText] = useState<string>("");
   const [model, setModel] = useState<string>(models[0].id);
   const [useWebSearch, setUseWebSearch] = useState<boolean>(false);
@@ -244,123 +238,118 @@ const InputDemo = () => {
   };
 
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <div className="flex items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </header>
+
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-hidden rounded-xl bg-background">
+          <Conversation className="flex-1">
+            <ConversationContent className="p-4">
+              {messages.map((message) => (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    {message.parts.map((part, i) => {
+                      switch (part.type) {
+                        case "text":
+                          return (
+                            <MessageResponse key={`${message.id}-${i}`}>
+                              {part.text}
+                            </MessageResponse>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
+                  </MessageContent>
+                </Message>
+              ))}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+          {status === "error" && error ? (
+            <div className="px-4 pb-2 text-sm text-destructive">{error}</div>
+          ) : null}
+
+          <PromptInput
+            onSubmit={handleSubmit}
+            className="bg-background p-3 [&_[data-slot=input-group]]:border-0 [&_[data-slot=input-group]]:bg-transparent"
+            globalDrop
+            multiple
+          >
+            <PromptInputHeader>
+              <PromptInputAttachmentsDisplay />
+            </PromptInputHeader>
+            <PromptInputBody>
+              <PromptInputTextarea
+                onChange={(e) => setText(e.target.value)}
+                value={text}
+                placeholder="Escribe tu mensaje…"
               />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>IA</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
-
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-hidden rounded-xl bg-background">
-              <Conversation className="flex-1">
-                <ConversationContent className="p-4">
-                  {messages.map((message) => (
-                    <Message from={message.role} key={message.id}>
-                      <MessageContent>
-                        {message.parts.map((part, i) => {
-                          switch (part.type) {
-                            case "text":
-                              return (
-                                <MessageResponse key={`${message.id}-${i}`}>
-                                  {part.text}
-                                </MessageResponse>
-                              );
-                            default:
-                              return null;
-                          }
-                        })}
-                      </MessageContent>
-                    </Message>
-                  ))}
-                </ConversationContent>
-                <ConversationScrollButton />
-              </Conversation>
-              {status === "error" && error ? (
-                <div className="px-4 pb-2 text-sm text-destructive">
-                  {error}
-                </div>
-              ) : null}
-
-              <PromptInput
-                onSubmit={handleSubmit}
-                className="bg-background p-3 [&_[data-slot=input-group]]:border-0 [&_[data-slot=input-group]]:bg-transparent"
-                globalDrop
-                multiple
-              >
-                <PromptInputHeader>
-                  <PromptInputAttachmentsDisplay />
-                </PromptInputHeader>
-                <PromptInputBody>
-                  <PromptInputTextarea
-                    onChange={(e) => setText(e.target.value)}
-                    value={text}
-                    placeholder="Escribe tu mensaje…"
-                  />
-                </PromptInputBody>
-                <PromptInputFooter>
-                  <PromptInputTools>
-                    <PromptInputActionMenu>
-                      <PromptInputActionMenuTrigger />
-                      <PromptInputActionMenuContent>
-                        <PromptInputActionAddAttachments />
-                        <PromptInputActionAddScreenshot />
-                      </PromptInputActionMenuContent>
-                    </PromptInputActionMenu>
-                    <PromptInputButton
-                      onClick={() => setUseWebSearch(!useWebSearch)}
-                      tooltip={{ content: "Search the web", shortcut: "⌘K" }}
-                      variant={useWebSearch ? "default" : "ghost"}
-                    >
-                      <GlobeIcon size={16} />
-                      <span>Search</span>
-                    </PromptInputButton>
-                    <PromptInputSelect
-                      onValueChange={(value) => {
-                        setModel(value);
-                      }}
-                      value={model}
-                    >
-                      <PromptInputSelectTrigger>
-                        <span className="text-xs">Modelo:</span>
-                        <PromptInputSelectValue />
-                      </PromptInputSelectTrigger>
-                      <PromptInputSelectContent>
-                        {models.map((model) => (
-                          <PromptInputSelectItem key={model.id} value={model.id}>
-                            {model.name}
-                          </PromptInputSelectItem>
-                        ))}
-                      </PromptInputSelectContent>
-                    </PromptInputSelect>
-                  </PromptInputTools>
-                  <SubmitButton />
-                </PromptInputFooter>
-              </PromptInput>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+            </PromptInputBody>
+            <PromptInputFooter>
+              <PromptInputTools>
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger />
+                  <PromptInputActionMenuContent>
+                    <PromptInputActionAddAttachments />
+                    <PromptInputActionAddScreenshot />
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
+                <PromptInputButton
+                  onClick={() => setUseWebSearch(!useWebSearch)}
+                  tooltip={{ content: "Search the web", shortcut: "⌘K" }}
+                  variant={useWebSearch ? "default" : "ghost"}
+                >
+                  <GlobeIcon size={16} />
+                  <span>Search</span>
+                </PromptInputButton>
+                <PromptInputSelect
+                  onValueChange={(value) => {
+                    setModel(value);
+                  }}
+                  value={model}
+                >
+                  <PromptInputSelectTrigger>
+                    <span className="text-xs">Modelo:</span>
+                    <PromptInputSelectValue />
+                  </PromptInputSelectTrigger>
+                  <PromptInputSelectContent>
+                    {models.map((model) => (
+                      <PromptInputSelectItem key={model.id} value={model.id}>
+                        {model.name}
+                      </PromptInputSelectItem>
+                    ))}
+                  </PromptInputSelectContent>
+                </PromptInputSelect>
+              </PromptInputTools>
+              <SubmitButton />
+            </PromptInputFooter>
+          </PromptInput>
+        </div>
+      </div>
+    </>
   );
 };
 
-export default InputDemo;
+export default function IAPage() {
+  return <ChatPage pageTitle="IA" />;
+}

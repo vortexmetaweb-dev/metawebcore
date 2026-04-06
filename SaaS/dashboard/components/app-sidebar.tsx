@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { createClient, type Session } from "@supabase/supabase-js"
+import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/SaaS/dashboard/components/nav-main"
 import { NavProjects } from "@/SaaS/dashboard/components/nav-projects"
@@ -123,7 +124,7 @@ const data = {
         },
         {
           title: "Tarjetas de Crédito",
-          url: "/dashboard/cuentas",
+          url: "/dashboard/tarjetas",
         },
         {
           title: "Conexiones Bancarias",
@@ -148,8 +149,8 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
-      url: "#",
+      name: "chat soporte",
+      url: "/dashboard/chat-soporte",
       icon: (
         <FrameIcon
         />
@@ -221,9 +222,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   const { isMobile } = useSidebar()
+  const pathname = usePathname() ?? ""
   const [session, setSession] = React.useState<Session | null>(null)
   const [tenants, setTenants] = React.useState<Tenant[]>([])
   const [activeTenantId, setActiveTenantId] = React.useState<string>("")
+
+  const navMain = React.useMemo(() => {
+    return data.navMain.map((group) => {
+      const isActive =
+        (group.items ?? []).some((it) => {
+          if (!it.url.startsWith("/")) return false
+          return pathname === it.url || pathname.startsWith(`${it.url}/`)
+        }) || false
+
+      return { ...group, isActive }
+    })
+  }, [pathname])
 
   React.useEffect(() => {
     if (!supabase) return
@@ -426,7 +440,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ) : null}
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} activeUrl={pathname} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>

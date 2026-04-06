@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,6 +21,7 @@ import { ChevronRightIcon } from "lucide-react"
 
 export function NavMain({
   items,
+  activeUrl,
 }: {
   items: {
     title: string
@@ -30,6 +33,7 @@ export function NavMain({
       url: string
     }[]
   }[]
+  activeUrl?: string
 }) {
   return (
     <SidebarGroup>
@@ -54,11 +58,26 @@ export function NavMain({
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
+                      {subItem.url.startsWith("/") ? (
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={
+                            !!activeUrl &&
+                            (activeUrl === subItem.url ||
+                              activeUrl.startsWith(`${subItem.url}/`))
+                          }
+                        >
+                          <Link href={subItem.url}>
+                            <span>{subItem.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      ) : (
+                        <SidebarMenuSubButton asChild>
+                          <a href={subItem.url}>
+                            <span>{subItem.title}</span>
+                          </a>
+                        </SidebarMenuSubButton>
+                      )}
                     </SidebarMenuSubItem>
                   ))}
                 </SidebarMenuSub>

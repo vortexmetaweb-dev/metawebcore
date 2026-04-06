@@ -3,7 +3,6 @@
 import { createClient, type Session } from "@supabase/supabase-js"
 import * as React from "react"
 
-import { AppSidebar } from "@/SaaS/dashboard/components/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,12 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/SaaS/dashboard/components/ui/breadcrumb"
 import { Separator } from "@/SaaS/dashboard/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/SaaS/dashboard/components/ui/sidebar"
-import { TooltipProvider } from "@/SaaS/dashboard/components/ui/tooltip"
+import { SidebarTrigger } from "@/SaaS/dashboard/components/ui/sidebar"
 
 type MovementType = "ingreso" | "egreso"
 
@@ -379,113 +373,102 @@ export default function HistorialPage() {
   }, [items])
 
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-vertical:h-4 data-vertical:self-auto"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Historial</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <div className="flex items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Historial</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </header>
 
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 rounded-xl bg-background p-4">
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-xl bg-muted/40 p-3">
-                  <div className="text-sm text-muted-foreground">Ingresos</div>
-                  <div className="mt-1 text-lg font-semibold tabular-nums">
-                    {moneyFormatter.format(totals.ingresos)}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-muted/40 p-3">
-                  <div className="text-sm text-muted-foreground">Egresos</div>
-                  <div className="mt-1 text-lg font-semibold tabular-nums">
-                    -{moneyFormatter.format(totals.egresos)}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-muted/40 p-3">
-                  <div className="text-sm text-muted-foreground">Balance</div>
-                  <div className="mt-1 text-lg font-semibold tabular-nums">
-                    {formatSignedMoney(totals.balance)}
-                  </div>
-                </div>
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 rounded-xl bg-background p-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl bg-muted/40 p-3">
+              <div className="text-sm text-muted-foreground">Ingresos</div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">
+                {moneyFormatter.format(totals.ingresos)}
               </div>
-
-              {notice ? (
-                <div className="text-sm text-muted-foreground">{notice}</div>
-              ) : null}
-              {error ? <div className="text-sm text-destructive">{error}</div> : null}
-
-              <div className="rounded-xl bg-muted/40 p-3">
-                {items.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    Aún no hay movimientos registrados.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[840px] overflow-hidden rounded-lg border border-input bg-background/60">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/40">
-                          <tr>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Monto (MXN)
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Fecha
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Tipo
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Categoría
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Descripción
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {items.map((it) => (
-                            <tr key={`${it.type}:${it.id}`}>
-                              <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                                {formatSignedMoney(it.amount)}
-                              </td>
-                              <td className="px-3 py-2 tabular-nums">{it.date}</td>
-                              <td className="px-3 py-2">
-                                {it.type === "ingreso" ? "Ingreso" : "Egreso"}
-                              </td>
-                              <td className="px-3 py-2">{it.category}</td>
-                              <td className="px-3 py-2">
-                                {it.description || "Sin descripción"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+            </div>
+            <div className="rounded-xl bg-muted/40 p-3">
+              <div className="text-sm text-muted-foreground">Egresos</div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">
+                -{moneyFormatter.format(totals.egresos)}
+              </div>
+            </div>
+            <div className="rounded-xl bg-muted/40 p-3">
+              <div className="text-sm text-muted-foreground">Balance</div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">
+                {formatSignedMoney(totals.balance)}
               </div>
             </div>
           </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+
+          {notice ? <div className="text-sm text-muted-foreground">{notice}</div> : null}
+          {error ? <div className="text-sm text-destructive">{error}</div> : null}
+
+          <div className="rounded-xl bg-muted/40 p-3">
+            {items.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                Aún no hay movimientos registrados.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="min-w-[840px] overflow-hidden rounded-lg border border-input bg-background/60">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">
+                          Monto (MXN)
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">Fecha</th>
+                        <th className="px-3 py-2 text-left font-medium">Tipo</th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          Categoría
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          Descripción
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {items.map((it) => (
+                        <tr key={`${it.type}:${it.id}`}>
+                          <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                            {formatSignedMoney(it.amount)}
+                          </td>
+                          <td className="px-3 py-2 tabular-nums">{it.date}</td>
+                          <td className="px-3 py-2">
+                            {it.type === "ingreso" ? "Ingreso" : "Egreso"}
+                          </td>
+                          <td className="px-3 py-2">{it.category}</td>
+                          <td className="px-3 py-2">
+                            {it.description || "Sin descripción"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

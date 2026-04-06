@@ -3,7 +3,6 @@
 import { createClient, type Session } from "@supabase/supabase-js"
 import * as React from "react"
 
-import { AppSidebar } from "@/SaaS/dashboard/components/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,12 +14,7 @@ import {
 import { Button } from "@/SaaS/dashboard/components/ui/button"
 import { Input } from "@/SaaS/dashboard/components/ui/input"
 import { Separator } from "@/SaaS/dashboard/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/SaaS/dashboard/components/ui/sidebar"
-import { TooltipProvider } from "@/SaaS/dashboard/components/ui/tooltip"
+import { SidebarTrigger } from "@/SaaS/dashboard/components/ui/sidebar"
 import { Textarea } from "@/SaaS/dashboard/components/ui/textarea"
 
 type ExpenseDraft = {
@@ -468,158 +462,149 @@ export default function RegistrarEgresosPage() {
   }
 
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-vertical:h-4 data-vertical:self-auto"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Registrar egresos</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <div className="flex items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/dashboard">MetaWeb Core</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Registrar egresos</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </header>
 
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 rounded-xl bg-background p-4">
-              <form onSubmit={handleSubmit} className="grid gap-3">
-                <div className="grid gap-2 md:grid-cols-3">
-                  <div className="grid gap-1">
-                    <div className="text-sm font-medium">Monto</div>
-                    <Input
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={draft.amount}
-                      onChange={(e) =>
-                        setDraft((prev) => ({ ...prev, amount: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-1">
-                    <div className="text-sm font-medium">Categoría</div>
-                    <select
-                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                      value={draft.category}
-                      onChange={(e) =>
-                        setDraft((prev) => ({ ...prev, category: e.target.value }))
-                      }
-                    >
-                      {defaultCategories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid gap-1">
-                    <div className="text-sm font-medium">Fecha</div>
-                    <Input
-                      type="date"
-                      value={draft.date}
-                      onChange={(e) =>
-                        setDraft((prev) => ({ ...prev, date: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">Descripción</div>
-                  <Textarea
-                    rows={3}
-                    placeholder="Ej. Supermercado, gasolina, etc."
-                    value={draft.description}
-                    onChange={(e) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm text-muted-foreground">
-                    {notice ? notice : session ? "Con sesión activa" : "Sin sesión"}
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={busy}
-                    className="bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
-                  >
-                    {busy ? "Guardando…" : "Registrar"}
-                  </Button>
-                </div>
-
-                {error ? (
-                  <div className="text-sm text-destructive">{error}</div>
-                ) : null}
-              </form>
-
-              <div className="rounded-xl bg-muted/40 p-3">
-                {items.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    Aún no hay egresos registrados.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[680px] overflow-hidden rounded-lg border border-input bg-background/60">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/40">
-                          <tr>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Monto (MXN)
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Fecha
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Categoría
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                              Descripción
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {items.map((it) => (
-                            <tr key={it.id}>
-                              <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                                {formatExpenseMoney(it.amount)}
-                              </td>
-                              <td className="px-3 py-2 tabular-nums">{it.date}</td>
-                              <td className="px-3 py-2">{it.category}</td>
-                              <td className="px-3 py-2">
-                                {it.description || "Sin descripción"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 rounded-xl bg-background p-4">
+          <form onSubmit={handleSubmit} className="grid gap-3">
+            <div className="grid gap-2 md:grid-cols-3">
+              <div className="grid gap-1">
+                <div className="text-sm font-medium">Monto</div>
+                <Input
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={draft.amount}
+                  onChange={(e) =>
+                    setDraft((prev) => ({ ...prev, amount: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm font-medium">Categoría</div>
+                <select
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  value={draft.category}
+                  onChange={(e) =>
+                    setDraft((prev) => ({ ...prev, category: e.target.value }))
+                  }
+                >
+                  {defaultCategories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-sm font-medium">Fecha</div>
+                <Input
+                  type="date"
+                  value={draft.date}
+                  onChange={(e) =>
+                    setDraft((prev) => ({ ...prev, date: e.target.value }))
+                  }
+                />
               </div>
             </div>
+
+            <div className="grid gap-1">
+              <div className="text-sm font-medium">Descripción</div>
+              <Textarea
+                rows={3}
+                placeholder="Ej. Supermercado, gasolina, etc."
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-muted-foreground">
+                {notice ? notice : session ? "Con sesión activa" : "Sin sesión"}
+              </div>
+              <Button
+                type="submit"
+                disabled={busy}
+                className="bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
+              >
+                {busy ? "Guardando…" : "Registrar"}
+              </Button>
+            </div>
+
+            {error ? <div className="text-sm text-destructive">{error}</div> : null}
+          </form>
+
+          <div className="rounded-xl bg-muted/40 p-3">
+            {items.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                Aún no hay egresos registrados.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="min-w-[680px] overflow-hidden rounded-lg border border-input bg-background/60">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">
+                          Monto (MXN)
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">Fecha</th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          Categoría
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          Descripción
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {items.map((it) => (
+                        <tr key={it.id}>
+                          <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                            {formatExpenseMoney(it.amount)}
+                          </td>
+                          <td className="px-3 py-2 tabular-nums">{it.date}</td>
+                          <td className="px-3 py-2">{it.category}</td>
+                          <td className="px-3 py-2">
+                            {it.description || "Sin descripción"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+        </div>
+      </div>
+    </>
   )
 }
