@@ -3,6 +3,7 @@
 import { createClient, type Session } from "@supabase/supabase-js"
 import * as React from "react"
 
+import { cn } from "@/lib/utils"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,11 +12,30 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/SaaS/dashboard/components/ui/breadcrumb"
+import { Calendar } from "@/SaaS/dashboard/components/ui/calendar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/SaaS/dashboard/components/ui/dialog"
 import { Separator } from "@/SaaS/dashboard/components/ui/separator"
 import { SidebarTrigger } from "@/SaaS/dashboard/components/ui/sidebar"
 import { Button } from "@/SaaS/dashboard/components/ui/button"
 import { Input } from "@/SaaS/dashboard/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/SaaS/dashboard/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/SaaS/dashboard/components/ui/select"
 import { Textarea } from "@/SaaS/dashboard/components/ui/textarea"
+import { CalendarIcon, ChevronDownIcon } from "lucide-react"
 
 type IncomeDraft = {
   amount: string
@@ -48,6 +68,26 @@ function formatDateInputValue(date: Date) {
   const m = String(date.getMonth() + 1).padStart(2, "0")
   const d = String(date.getDate()).padStart(2, "0")
   return `${y}-${m}-${d}`
+}
+
+function parseDateInputValue(value: string) {
+  if (!value) return null
+  const date = new Date(`${value}T00:00:00`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function formatDateLabel(value: string) {
+  const date = parseDateInputValue(value)
+  if (!date) return ""
+  try {
+    return new Intl.DateTimeFormat("es-MX", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(date)
+  } catch {
+    return value
+  }
 }
 
 function getLocalStorageKey(userId?: string, tenantId?: string) {
@@ -137,6 +177,7 @@ export default function RegistrarIngresosPage() {
   const [busy, setBusy] = React.useState(false)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [addOpen, setAddOpen] = React.useState(false)
 
   React.useEffect(() => {
     setItems(loadLocalIncomes(getLocalStorageKey()))
@@ -303,19 +344,18 @@ export default function RegistrarIngresosPage() {
     }
   }, [session, supabase])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function submitIncome() {
     setNotice(null)
     setError(null)
 
     const amountNumber = Number(draft.amount)
     if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
       setError("Monto inválido.")
-      return
+      return false
     }
     if (!draft.date) {
       setError("Selecciona una fecha.")
-      return
+      return false
     }
     if (session && (!tenantId || tenantId === "null")) {
       setError("No se pudo determinar el tenant (espacio).")
@@ -334,12 +374,7 @@ export default function RegistrarIngresosPage() {
         return next
       })
 
-      setDraft((prev) => ({
-        ...prev,
-        amount: "",
-        description: "",
-      }))
-      return
+      return true
     }
 
     setBusy(true)
@@ -348,7 +383,7 @@ export default function RegistrarIngresosPage() {
         if (!supabase) {
           setError("Supabase no está configurado.")
           setNotice("No se pudo guardar en Supabase. Guardado localmente.")
-          return
+          return false
         }
 
         const payload = {
@@ -399,6 +434,7 @@ export default function RegistrarIngresosPage() {
             )
             return next
           })
+          return true
         } else {
           const savedItem: IncomeItem = {
             amount: String((data as { amount?: unknown }).amount ?? amountNumber),
@@ -425,6 +461,7 @@ export default function RegistrarIngresosPage() {
           })
 
           setNotice("Ingreso registrado en Supabase.")
+          return true
         }
       } else {
         const localItem: IncomeItem = {
@@ -441,18 +478,25 @@ export default function RegistrarIngresosPage() {
         })
 
         setNotice("Ingreso guardado localmente (sin sesión).")
+        return true
       }
-
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error desconocido")
+      return false
+    } finally {
+      setBusy(false)
       setDraft((prev) => ({
         ...prev,
         amount: "",
         description: "",
       }))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido")
-    } finally {
-      setBusy(false)
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const ok = await submitIncome()
+    if (ok) setAddOpen(false)
   }
 
   return (
@@ -479,120 +523,212 @@ export default function RegistrarIngresosPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 rounded-xl bg-background p-4">
-          <form onSubmit={handleSubmit} className="grid gap-3">
-            <div className="grid gap-2 md:grid-cols-3">
-              <div className="grid gap-1">
-                <div className="text-sm font-medium">Monto</div>
-                <Input
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={draft.amount}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, amount: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm font-medium">Categoría</div>
-                <select
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                  value={draft.category}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, category: e.target.value }))
-                  }
-                >
-                  {defaultCategories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-sm font-medium">Fecha</div>
-                <Input
-                  type="date"
-                  value={draft.date}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, date: e.target.value }))
-                  }
-                />
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="text-2xl font-semibold tracking-tight">
+              Registrar ingresos
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Registra tus ingresos y revisa el historial del mes.
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              {notice ? notice : session ? "Con sesión activa" : "Sin sesión"}
+            </div>
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => {
+                setError(null)
+                setNotice(null)
+                setAddOpen(true)
+              }}
+              className="rounded-full bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
+            >
+              Agregar ingreso
+            </Button>
+          </div>
+
+          {error ? (
+            <div className="rounded-xl border border-border bg-background/70 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogContent className="sm:max-w-md rounded-2xl">
+              <DialogHeader>
+                <DialogTitle>Agregar ingreso</DialogTitle>
+                <DialogDescription>
+                  Completa los datos para registrar tu ingreso.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleSubmit} className="grid gap-3">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="grid gap-1 md:col-span-1">
+                    <div className="text-sm font-medium">Monto</div>
+                    <Input
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={draft.amount}
+                      onChange={(e) =>
+                        setDraft((prev) => ({ ...prev, amount: e.target.value }))
+                      }
+                      className="h-10 rounded-xl"
+                    />
+                  </div>
+
+                  <div className="grid gap-1 md:col-span-1">
+                    <div className="text-sm font-medium">Categoría</div>
+                    <Select
+                      value={draft.category}
+                      onValueChange={(value) =>
+                        setDraft((prev) => ({ ...prev, category: value }))
+                      }
+                    >
+                      <SelectTrigger className="h-10 w-full rounded-xl">
+                        <SelectValue placeholder="Selecciona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {defaultCategories.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-1 md:col-span-1">
+                    <div className="text-sm font-medium">Fecha</div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 w-full justify-between rounded-xl font-normal"
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                            <span
+                              className={cn(
+                                "min-w-0 truncate",
+                                draft.date ? "" : "text-muted-foreground"
+                              )}
+                            >
+                              {draft.date
+                                ? formatDateLabel(draft.date)
+                                : "Selecciona fecha"}
+                            </span>
+                          </span>
+                          <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        sideOffset={8}
+                        className="w-auto p-0 overflow-hidden"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={parseDateInputValue(draft.date) ?? undefined}
+                          onSelect={(date) => {
+                            if (!date) return
+                            setDraft((prev) => ({
+                              ...prev,
+                              date: formatDateInputValue(date),
+                            }))
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <div className="text-sm font-medium">Descripción</div>
+                  <Textarea
+                    rows={3}
+                    placeholder="Ej. Pago de cliente, salario, etc."
+                    value={draft.description}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <DialogFooter className="rounded-b-2xl">
+                  <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={busy}
+                    className="rounded-full bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
+                  >
+                    {busy ? "Guardando…" : "Guardar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <div className="rounded-2xl border border-border bg-muted/30 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold">Historial</div>
+              <div className="text-xs text-muted-foreground">
+                {items.length > 0 ? `${items.length} registros` : "Sin registros"}
               </div>
             </div>
 
-            <div className="grid gap-1">
-              <div className="text-sm font-medium">Descripción</div>
-              <Textarea
-                rows={3}
-                placeholder="Ej. Pago de cliente, salario, etc."
-                value={draft.description}
-                onChange={(e) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-muted-foreground">
-                {notice ? notice : session ? "Con sesión activa" : "Sin sesión"}
-              </div>
-              <Button
-                type="submit"
-                disabled={busy}
-                className="bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
-              >
-                {busy ? "Guardando…" : "Registrar"}
-              </Button>
-            </div>
-
-            {error ? <div className="text-sm text-destructive">{error}</div> : null}
-          </form>
-
-          <div className="rounded-xl bg-muted/40 p-3">
             {items.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
+              <div className="py-6 text-center text-sm text-muted-foreground">
                 Aún no hay ingresos registrados.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <div className="min-w-[680px] overflow-hidden rounded-lg border border-input bg-background/60">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/40">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium">
-                          Monto (MXN)
-                        </th>
-                        <th className="px-3 py-2 text-left font-medium">Fecha</th>
-                        <th className="px-3 py-2 text-left font-medium">
-                          Categoría
-                        </th>
-                        <th className="px-3 py-2 text-left font-medium">
-                          Descripción
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {items.map((it) => (
-                        <tr key={it.id}>
-                          <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                            {formatMoney(it.amount)}
-                          </td>
-                          <td className="px-3 py-2 tabular-nums">{it.date}</td>
-                          <td className="px-3 py-2">{it.category}</td>
-                          <td className="px-3 py-2">
-                            {it.description || "Sin descripción"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="min-w-[680px] overflow-hidden rounded-2xl border border-input bg-background/70 shadow-sm ring-1 ring-border">
+                  <div className="grid grid-cols-12 gap-2 border-b border-border bg-background/40 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    <div className="col-span-3 text-right">Monto</div>
+                    <div className="col-span-3">Fecha</div>
+                    <div className="col-span-3">Categoría</div>
+                    <div className="col-span-3">Descripción</div>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {items.map((it) => (
+                      <div
+                        key={it.id}
+                        className="grid grid-cols-12 items-center gap-2 px-4 py-3 text-sm transition-colors hover:bg-muted/30"
+                      >
+                        <div className="col-span-3 text-right font-semibold tabular-nums text-primary">
+                          {formatMoney(it.amount)}
+                        </div>
+                        <div className="col-span-3 tabular-nums text-muted-foreground">
+                          {it.date}
+                        </div>
+                        <div className="col-span-3">
+                          <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                            {it.category}
+                          </span>
+                        </div>
+                        <div className="col-span-3 text-muted-foreground">
+                          {it.description || "Sin descripción"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

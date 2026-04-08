@@ -2,9 +2,10 @@
 
 import { createClient, type Session } from "@supabase/supabase-js"
 import * as React from "react"
-import { Trash2Icon } from "lucide-react"
+import { CalendarIcon, ChevronDownIcon, Trash2Icon } from "lucide-react"
 
 import { CreditCard } from "@/components/shared-assets/credit-card/credit-card"
+import { cn } from "@/lib/utils"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,7 +15,21 @@ import {
   BreadcrumbSeparator,
 } from "@/SaaS/dashboard/components/ui/breadcrumb"
 import { Button } from "@/SaaS/dashboard/components/ui/button"
+import { Calendar } from "@/SaaS/dashboard/components/ui/calendar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/SaaS/dashboard/components/ui/dialog"
 import { Input } from "@/SaaS/dashboard/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/SaaS/dashboard/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -141,6 +156,18 @@ function formatExpValue(raw: string) {
   const yy = m[1]?.slice(-2) ?? ""
   const mm = m[2] ?? ""
   return `${mm}/${yy}`
+}
+
+function parseMonthValue(value: string) {
+  if (!value) return null
+  const date = new Date(`${value}-01T00:00:00`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function formatMonthValue(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  return `${y}-${m}`
 }
 
 function detectNetwork(digits: string): CardNetwork {
@@ -353,6 +380,8 @@ export default function CuentasPage() {
   const [busy, setBusy] = React.useState(false)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [addOpen, setAddOpen] = React.useState(false)
+  const [expOpen, setExpOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (!supabase) return
@@ -586,6 +615,7 @@ export default function CuentasPage() {
     setNotice(null)
     setError(null)
 
+    let didAdd = false
     const digits = sanitizeCardNumber(draft.number)
     if (digits.length < 12) {
       setError("Número de tarjeta inválido.")
@@ -698,6 +728,7 @@ export default function CuentasPage() {
 
           setCards((prev) => [saved, ...prev])
           setNotice("Tarjeta agregada en Supabase.")
+          didAdd = true
         }
       } else {
         const item: SavedCard = {
@@ -717,6 +748,7 @@ export default function CuentasPage() {
           return next
         })
         setNotice("Tarjeta agregada.")
+        didAdd = true
       }
 
       setDraft((prev) => ({
@@ -725,6 +757,7 @@ export default function CuentasPage() {
         number: "",
         exp: "",
       }))
+      if (didAdd) setAddOpen(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido")
     } finally {
@@ -799,143 +832,233 @@ export default function CuentasPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 rounded-xl bg-background p-4">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="grid gap-3">
-              <div className="text-sm font-medium text-muted-foreground">
-                Vista previa
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="text-2xl font-semibold tracking-tight">Mis cuentas</div>
+            <div className="text-sm text-muted-foreground">
+              Administra tus métodos y datos para pagos.
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              {notice ? notice : session ? "Con sesión activa" : "Sin sesión"}
+            </div>
+            <Button
+              type="button"
+              size="lg"
+              className="rounded-full"
+              onClick={() => {
+                setError(null)
+                setNotice(null)
+                setAddOpen(true)
+              }}
+            >
+              Agregar tarjeta
+            </Button>
+          </div>
+
+          {error ? (
+            <div className="rounded-xl border border-border bg-background/70 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogContent className="sm:max-w-3xl rounded-2xl">
+              <DialogHeader>
+                <DialogTitle>Agregar tarjeta</DialogTitle>
+                <DialogDescription>
+                  Completa los datos y revisa la vista previa antes de guardar.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-3">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Vista previa
+                  </div>
+                  <div className="rounded-2xl border border-border bg-muted/20 p-4">
+                    <div className="mx-auto w-full max-w-[360px]">
+                      <CreditCard
+                        width={320}
+                        company={preview.company}
+                        cardHolder={preview.holder}
+                        cardExpiration={preview.exp}
+                        cardNumber={preview.cardNumber}
+                        type="brand-dark"
+                        bankLogo={preview.bankLogo}
+                        network={preview.network}
+                        backgroundClassName={preview.backgroundClassName}
+                        className="mx-auto"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="grid gap-3">
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div className="grid gap-1">
+                      <div className="text-sm font-medium">Tipo</div>
+                      <Select
+                        value={draft.kind}
+                        onValueChange={(value) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            kind: value === "debit" ? "debit" : "credit",
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-10 w-full rounded-xl">
+                          <SelectValue placeholder="Selecciona" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="credit">Crédito</SelectItem>
+                          <SelectItem value="debit">Débito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1">
+                      <div className="text-sm font-medium">Banco</div>
+                      <Input
+                        className="h-10 rounded-xl"
+                        value={draft.company}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, company: e.target.value }))
+                        }
+                        placeholder="Ej. BBVA"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-1">
+                    <div className="text-sm font-medium">Titular</div>
+                    <Input
+                      className="h-10 rounded-xl"
+                      value={draft.holder}
+                      onChange={(e) =>
+                        setDraft((prev) => ({ ...prev, holder: e.target.value }))
+                      }
+                      placeholder="Nombre y apellido"
+                      autoComplete="cc-name"
+                    />
+                  </div>
+
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div className="grid gap-1">
+                      <div className="text-sm font-medium">Número</div>
+                      <Input
+                        className="h-10 rounded-xl"
+                        value={draft.number}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, number: e.target.value }))
+                        }
+                        placeholder="1234 1234 1234 1234"
+                        inputMode="numeric"
+                        autoComplete="cc-number"
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        Red: {formatNetworkLabel(preview.network)}
+                      </div>
+                    </div>
+                    <div className="grid gap-1">
+                      <div className="text-sm font-medium">Expira</div>
+                      <Popover open={expOpen} onOpenChange={setExpOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-10 w-full justify-between rounded-xl font-normal"
+                          >
+                            <span className="flex min-w-0 items-center gap-2">
+                              <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                              <span
+                                className={cn(
+                                  "min-w-0 truncate",
+                                  draft.exp ? "" : "text-muted-foreground"
+                                )}
+                              >
+                                {draft.exp ? formatExpValue(draft.exp) : "Selecciona mes"}
+                              </span>
+                            </span>
+                            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="start"
+                          sideOffset={8}
+                          className="w-auto p-0 overflow-hidden"
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={parseMonthValue(draft.exp) ?? undefined}
+                            onSelect={(date) => {
+                              if (!date) return
+                              setDraft((prev) => ({ ...prev, exp: formatMonthValue(date) }))
+                              setExpOpen(false)
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="mx-0 mb-0 rounded-b-2xl">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => setAddOpen(false)}
+                      disabled={busy}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="rounded-full" disabled={busy}>
+                      {busy ? "Guardando…" : "Guardar"}
+                    </Button>
+                  </DialogFooter>
+                </form>
               </div>
-              <div className="rounded-xl bg-muted/30 p-4">
-                <CreditCard
-                  width={360}
-                  company={preview.company}
-                  cardHolder={preview.holder}
-                  cardExpiration={preview.exp}
-                  cardNumber={preview.cardNumber}
-                  type="brand-dark"
-                  bankLogo={preview.bankLogo}
-                  network={preview.network}
-                  backgroundClassName={preview.backgroundClassName}
-                  className="mx-auto"
-                />
+            </DialogContent>
+          </Dialog>
+
+          <div className="rounded-2xl border border-border bg-background/70 p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold">Mis tarjetas</div>
+              <div className="text-xs text-muted-foreground">
+                {cards.length > 0 ? `${cards.length} registros` : "Sin registros"}
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-3">
-              <div className="text-sm font-medium">Agregar tarjeta</div>
-
-              <div className="grid gap-2 md:grid-cols-2">
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">Tipo</div>
-                  <Select
-                    value={draft.kind}
-                    onValueChange={(value) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        kind: value === "debit" ? "debit" : "credit",
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecciona" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit">Crédito</SelectItem>
-                      <SelectItem value="debit">Débito</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">Banco</div>
-                  <Input
-                    value={draft.company}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, company: e.target.value }))
-                    }
-                    placeholder="Ej. BBVA"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-1">
-                <div className="text-sm font-medium">Titular</div>
-                <Input
-                  value={draft.holder}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, holder: e.target.value }))
-                  }
-                  placeholder="Nombre y apellido"
-                  autoComplete="cc-name"
-                />
-              </div>
-
-              <div className="grid gap-2 md:grid-cols-2">
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">Número</div>
-                  <Input
-                    value={draft.number}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, number: e.target.value }))
-                    }
-                    placeholder="1234 1234 1234 1234"
-                    inputMode="numeric"
-                    autoComplete="cc-number"
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    Red: {formatNetworkLabel(preview.network)}
-                  </div>
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">Expira</div>
-                  <Input
-                    type="month"
-                    value={draft.exp}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, exp: e.target.value }))
-                    }
-                    autoComplete="cc-exp"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-muted-foreground">
-                  {notice ? notice : session ? "Con sesión activa" : "Sin sesión"}
-                </div>
-                <Button type="submit" disabled={busy}>
-                  {busy ? "Guardando…" : "Agregar"}
-                </Button>
-              </div>
-
-              {error ? <div className="text-sm text-destructive">{error}</div> : null}
-            </form>
-          </div>
-
-          <div className="grid gap-3">
-            <div className="text-sm font-medium">Mis tarjetas</div>
             {cards.length === 0 ? (
               cardsLoading || (session && !tenantId) ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="rounded-xl bg-muted/30 p-3">
+                    <div key={i} className="rounded-2xl border border-border bg-muted/20 p-3">
                       <CreditCardSkeleton />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">
+                <div className="py-8 text-center text-sm text-muted-foreground">
                   Aún no has agregado tarjetas.
                 </div>
               )
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {cards.map((c) => (
-                  <div key={c.id} className="relative rounded-xl bg-muted/30 p-3">
+                  <div
+                    key={c.id}
+                    className="relative overflow-hidden rounded-2xl border border-border bg-background/60 p-3 shadow-sm"
+                  >
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="ghost"
                       size="icon-sm"
-                      className="absolute top-2 right-2"
+                      className={cn(
+                        "absolute top-2 right-2 rounded-full bg-background/70 hover:bg-background",
+                        "ring-1 ring-border"
+                      )}
                       onClick={() => handleDeleteCard(c.id)}
                       disabled={busy}
                     >
@@ -957,7 +1080,10 @@ export default function CuentasPage() {
                 ))}
                 {cardsLoading
                   ? Array.from({ length: 2 }).map((_, i) => (
-                      <div key={`loading-${i}`} className="rounded-xl bg-muted/30 p-3">
+                      <div
+                        key={`loading-${i}`}
+                        className="rounded-2xl border border-border bg-muted/20 p-3"
+                      >
                         <CreditCardSkeleton />
                       </div>
                     ))

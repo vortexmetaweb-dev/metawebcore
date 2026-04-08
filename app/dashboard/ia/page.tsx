@@ -69,8 +69,6 @@ const PromptInputAttachmentsDisplay = () => {
 };
 
 const models = [
-  { id: "openai/gpt-4o", name: "GPT-4o" },
-  { id: "anthropic/claude-opus-4-20250514", name: "Claude 4 Opus" },
   { id: "google/gemini-2.0-flash", name: "Gemini 2.0 Flash" },
 ];
 
@@ -125,7 +123,7 @@ export const ChatPage = ({ pageTitle }: { pageTitle: string }) => {
     const disabled = status === "submitted" || (!text && attachments.files.length === 0);
     return (
       <PromptInputSubmit
-        className="bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
+        className="rounded-full bg-[#87a9a6] text-[#171f25] hover:bg-[#87a9a6]/90"
         disabled={disabled}
         onStop={stop}
         status={status}
@@ -261,89 +259,115 @@ export const ChatPage = ({ pageTitle }: { pageTitle: string }) => {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-hidden rounded-xl bg-background">
-          <Conversation className="flex-1">
-            <ConversationContent className="p-4">
-              {messages.map((message) => (
-                <Message from={message.role} key={message.id}>
-                  <MessageContent>
-                    {message.parts.map((part, i) => {
-                      switch (part.type) {
-                        case "text":
-                          return (
-                            <MessageResponse key={`${message.id}-${i}`}>
-                              {part.text}
-                            </MessageResponse>
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
-                  </MessageContent>
-                </Message>
-              ))}
-            </ConversationContent>
-            <ConversationScrollButton />
-          </Conversation>
-          {status === "error" && error ? (
-            <div className="px-4 pb-2 text-sm text-destructive">{error}</div>
-          ) : null}
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="text-2xl font-semibold tracking-tight">{pageTitle}</div>
+            <div className="text-sm text-muted-foreground">
+              Escribe tu pregunta y recibe una respuesta. Puedes adjuntar archivos.
+            </div>
+          </div>
 
-          <PromptInput
-            onSubmit={handleSubmit}
-            className="bg-background p-3 [&_[data-slot=input-group]]:border-0 [&_[data-slot=input-group]]:bg-transparent"
-            globalDrop
-            multiple
-          >
-            <PromptInputHeader>
-              <PromptInputAttachmentsDisplay />
-            </PromptInputHeader>
-            <PromptInputBody>
-              <PromptInputTextarea
-                onChange={(e) => setText(e.target.value)}
-                value={text}
-                placeholder="Escribe tu mensaje…"
-              />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputTools>
-                <PromptInputActionMenu>
-                  <PromptInputActionMenuTrigger />
-                  <PromptInputActionMenuContent>
-                    <PromptInputActionAddAttachments />
-                    <PromptInputActionAddScreenshot />
-                  </PromptInputActionMenuContent>
-                </PromptInputActionMenu>
-                <PromptInputButton
-                  onClick={() => setUseWebSearch(!useWebSearch)}
-                  tooltip={{ content: "Search the web", shortcut: "⌘K" }}
-                  variant={useWebSearch ? "default" : "ghost"}
-                >
-                  <GlobeIcon size={16} />
-                  <span>Search</span>
-                </PromptInputButton>
-                <PromptInputSelect
-                  onValueChange={(value) => {
-                    setModel(value);
-                  }}
-                  value={model}
-                >
-                  <PromptInputSelectTrigger>
-                    <span className="text-xs">Modelo:</span>
-                    <PromptInputSelectValue />
-                  </PromptInputSelectTrigger>
-                  <PromptInputSelectContent>
-                    {models.map((model) => (
-                      <PromptInputSelectItem key={model.id} value={model.id}>
-                        {model.name}
-                      </PromptInputSelectItem>
-                    ))}
-                  </PromptInputSelectContent>
-                </PromptInputSelect>
-              </PromptInputTools>
-              <SubmitButton />
-            </PromptInputFooter>
-          </PromptInput>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-muted/30">
+            <Conversation className="flex-1">
+              <ConversationContent className="p-4">
+                {messages.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    Empieza escribiendo un mensaje.
+                  </div>
+                ) : null}
+                {messages.map((message) => (
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent
+                      className={
+                        message.role === "user"
+                          ? "rounded-2xl bg-[#dcf8c6] px-4 py-3 text-[#0b141a] shadow-sm"
+                          : "rounded-2xl border border-border bg-background px-4 py-3 text-foreground shadow-sm"
+                      }
+                    >
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case "text":
+                            return (
+                              <MessageResponse key={`${message.id}-${i}`}>
+                                {part.text}
+                              </MessageResponse>
+                            );
+                          default:
+                            return null;
+                        }
+                      })}
+                    </MessageContent>
+                  </Message>
+                ))}
+              </ConversationContent>
+              <ConversationScrollButton className="mb-3" />
+            </Conversation>
+
+            {status === "error" && error ? (
+              <div className="px-4 pb-2 text-sm text-destructive">{error}</div>
+            ) : null}
+
+            <div className="border-t border-border bg-background/70 p-3">
+              <PromptInput
+                onSubmit={handleSubmit}
+                className="rounded-2xl bg-background p-2 shadow-sm ring-1 ring-border [&_[data-slot=input-group]]:border-0 [&_[data-slot=input-group]]:bg-transparent"
+                globalDrop
+                multiple
+              >
+                <PromptInputHeader>
+                  <PromptInputAttachmentsDisplay />
+                </PromptInputHeader>
+                <PromptInputBody>
+                  <PromptInputTextarea
+                    onChange={(e) => setText(e.target.value)}
+                    value={text}
+                    placeholder="Escribe tu mensaje…"
+                  />
+                </PromptInputBody>
+                <PromptInputFooter>
+                  <PromptInputTools>
+                    <PromptInputActionMenu>
+                      <PromptInputActionMenuTrigger />
+                      <PromptInputActionMenuContent>
+                        <PromptInputActionAddAttachments />
+                        <PromptInputActionAddScreenshot />
+                      </PromptInputActionMenuContent>
+                    </PromptInputActionMenu>
+                    <PromptInputButton
+                      onClick={() => setUseWebSearch(!useWebSearch)}
+                      tooltip={{ content: "Search the web", shortcut: "⌘K" }}
+                      variant={useWebSearch ? "default" : "ghost"}
+                      className="rounded-full"
+                    >
+                      <GlobeIcon size={16} />
+                      <span>Web</span>
+                    </PromptInputButton>
+                    {models.length > 1 ? (
+                      <PromptInputSelect
+                        onValueChange={(value) => {
+                          setModel(value);
+                        }}
+                        value={model}
+                      >
+                        <PromptInputSelectTrigger className="rounded-full">
+                          <span className="text-xs">Modelo:</span>
+                          <PromptInputSelectValue />
+                        </PromptInputSelectTrigger>
+                        <PromptInputSelectContent>
+                          {models.map((model) => (
+                            <PromptInputSelectItem key={model.id} value={model.id}>
+                              {model.name}
+                            </PromptInputSelectItem>
+                          ))}
+                        </PromptInputSelectContent>
+                      </PromptInputSelect>
+                    ) : null}
+                  </PromptInputTools>
+                  <SubmitButton />
+                </PromptInputFooter>
+              </PromptInput>
+            </div>
+          </div>
         </div>
       </div>
     </>

@@ -54,11 +54,11 @@ const data = {
       items: [
         {
           title: "Resumen Mensual",
-          url: "#",
+          url: "/dashboard/resumen-mensual",
         },
         {
           title: "Notificaciones",
-          url: "#",
+          url: "/dashboard/notificaciones",
         },
         {
           title: "IA",
@@ -98,15 +98,15 @@ const data = {
       items: [
         {
           title: "Presupuestos Activos",
-          url: "#",
+          url: "/dashboard/presupuestos-activos",
         },
         {
           title: "Gastos Fijos",
-          url: "#",
+          url: "/dashboard/gastos-fijos",
         },
         {
           title: "Metas de Ahorro",
-          url: "#",
+          url: "/dashboard/metas-de-ahorro",
         },
       ],
     },
@@ -123,11 +123,7 @@ const data = {
           url: "/dashboard/cuentas",
         },
         {
-          title: "Tarjetas de Crédito",
-          url: "/dashboard/tarjetas",
-        },
-        {
-          title: "Conexiones Bancarias",
+          title: "Datos Bancarios",
           url: "#",
         },
       ],
@@ -373,7 +369,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-2">
           <div className="grid size-8 place-items-center text-sidebar-foreground">

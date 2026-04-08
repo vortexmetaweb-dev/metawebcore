@@ -1,0 +1,30 @@
+:root {
+  --registrar-background: oklch(1 0 0);
+  --registrar-foreground: oklch(0.145 0 0);
+  --registrar-muted: oklch(0.97 0 0);
+  --registrar-muted-foreground: oklch(0.556 0 0);
+  --registrar-border: oklch(0.922 0 0);
+  --registrar-input: oklch(0.922 0 0);
+  --registrar-destructive: oklch(0.577 0.245 27.325);
+  --registrar-button: #87a9a6;
+  --registrar-button-foreground: #171f25;
+  --registrar-button-hover: color-mix(in srgb, #87a9a6 90%, transparent);
+  --registrar-surface-soft: oklch(0.97 0 0 / 40%);
+  --registrar-surface-overlay: oklch(1 0 0 / 60%);
+}
+
+.dark {
+  --registrar-background: oklch(0.145 0 0);
+  --registrar-foreground: oklch(0.985 0 0);
+  --registrar-muted: oklch(0.269 0 0);
+  --registrar-muted-foreground: oklch(0.708 0 0);
+  --registrar-border: oklch(1 0 0 / 10%);
+  --registrar-input: oklch(1 0 0 / 15%);
+  --registrar-destructive: oklch(0.704 0.191 22.216);
+  --registrar-button: #87a9a6;
+  --registrar-button-foreground: #171f25;
+  --registrar-button-hover: color-mix(in srgb, #87a9a6 90%, transparent);
+  --registrar-surface-soft: oklch(0.269 0 0 / 40%);
+  --registrar-surface-overlay: oklch(0.145 0 0 / 60%);
+}
+
