@@ -24,6 +24,15 @@ function getSupabaseConfig() {
   return { url, key }
 }
 
+function createSupabaseClient() {
+  const { url, key } = getSupabaseConfig()
+  return createClient(url, key, {
+    global: {
+      headers: { apikey: key },
+    },
+  })
+}
+
 function getUserDisplayName(session: Session) {
   const meta = session.user.user_metadata as Record<string, unknown> | undefined
   const candidates = [
@@ -129,8 +138,7 @@ export default function AuthPage() {
 
   React.useEffect(() => {
     try {
-      const { url, key } = getSupabaseConfig()
-      const supabase = createClient(url, key)
+      const supabase = createSupabaseClient()
 
       supabase.auth.getSession().then(({ data }) => {
         setSession(data.session ?? null)
@@ -160,8 +168,7 @@ export default function AuthPage() {
     setBusy(provider)
 
     try {
-      const { url, key } = getSupabaseConfig()
-      const supabase = createClient(url, key)
+      const supabase = createSupabaseClient()
 
       const redirectTo = `${window.location.origin}/auth/callback`
       const { error } = await supabase.auth.signInWithOAuth({
@@ -187,8 +194,7 @@ export default function AuthPage() {
     setBusy("email")
 
     try {
-      const { url, key } = getSupabaseConfig()
-      const supabase = createClient(url, key)
+      const supabase = createSupabaseClient()
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -216,8 +222,7 @@ export default function AuthPage() {
     setBusy("email")
 
     try {
-      const { url, key } = getSupabaseConfig()
-      const supabase = createClient(url, key)
+      const supabase = createSupabaseClient()
       const { error } = await supabase.auth.signOut()
       if (error) setError(error.message)
     } catch (e) {
