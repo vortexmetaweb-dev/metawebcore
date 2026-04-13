@@ -75,7 +75,7 @@ export default function Navbar() {
               <DropdownMenuContent
                 align="start"
                 sideOffset={10}
-                className="w-56 rounded-2xl border border-white/10 bg-black p-1 text-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
+                className="w-56 rounded-2xl border border-white/10 bg-[#D4B483] p-1 text-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
                 onMouseEnter={() => clearTimer(featuresCloseTimer)}
                 onMouseLeave={() =>
                   scheduleClose(featuresCloseTimer, setFeaturesOpen)
@@ -130,7 +130,7 @@ export default function Navbar() {
               <DropdownMenuContent
                 align="start"
                 sideOffset={10}
-                className="w-56 rounded-2xl border border-white/10 bg-black p-1 text-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
+                className="w-56 rounded-2xl border border-white/10 bg-[#D4B483] p-1 text-white shadow-[0_18px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
                 onMouseEnter={() => clearTimer(resourcesCloseTimer)}
                 onMouseLeave={() =>
                   scheduleClose(resourcesCloseTimer, setResourcesOpen)

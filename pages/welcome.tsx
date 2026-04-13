@@ -1,8 +1,11 @@
 import { createClient, type Session } from "@supabase/supabase-js"
 import { useRouter } from "next/router"
+import { Manrope } from "next/font/google"
 import * as React from "react"
 
 import { Button } from "@/SaaS/dashboard/components/ui/button"
+
+const manrope = Manrope({ subsets: ["latin"] })
 
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -76,38 +79,38 @@ export default function WelcomePage() {
   const name = session ? getUserDisplayName(session) : "Usuario"
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#171f25] text-white">
+    <div className={`${manrope.className} relative min-h-screen overflow-hidden bg-black text-white`}>
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(135deg,#171f25_0%,#647b84_28%,#87a9a6_62%,#cfd9d8_100%)]"
+        className="absolute inset-0 bg-[linear-gradient(135deg,#000000_0%,#0B0B0B_45%,#141414_100%)]"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_15%_10%,rgba(23,31,37,0.35),transparent_60%)]"
+        className="absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_10%,rgba(212,180,131,0.22),transparent_55%)]"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(900px_circle_at_90%_25%,rgba(135,169,166,0.55),transparent_55%)]"
+        className="absolute inset-0 bg-[radial-gradient(900px_circle_at_85%_25%,rgba(255,255,255,0.06),transparent_60%)]"
       />
       <div aria-hidden="true" className="absolute inset-0 backdrop-blur-[2px]" />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-16 text-center">
         <div>
           <div className="text-sm font-semibold tracking-[0.22em] text-white/75">
-            META WEB CORE
+            META WEB <span className="text-[#D4B483]">CORE</span>
           </div>
           <h1 className="mt-6 text-5xl font-semibold tracking-tight text-white md:text-6xl">
             Bienvenido
           </h1>
-          <div className="mx-auto mt-5 h-1 w-24 rounded-full bg-gradient-to-r from-[#87a9a6] via-[#647b84] to-[#cfd9d8]" />
-          <div className="mt-5 text-2xl font-medium text-[#cfd9d8] md:text-3xl">
+          <div className="mx-auto mt-5 h-1 w-24 rounded-full bg-[#D4B483]" />
+          <div className="mt-5 text-2xl font-medium text-white/90 md:text-3xl">
             {name}
           </div>
 
           <div className="mt-10 flex justify-center">
             <Button
               type="button"
-              className="h-10 border border-white/15 bg-[#171f25]/55 px-7 text-white hover:bg-[#171f25]/70 focus-visible:ring-4 focus-visible:ring-[#87a9a6]/35"
+              className="h-10 border border-black/10 bg-white px-7 text-black hover:bg-white/90 focus-visible:ring-4 focus-visible:ring-[#D4B483]/35"
               onClick={() => router.push("/dashboard")}
             >
               Continuar

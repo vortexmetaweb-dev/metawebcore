@@ -131,7 +131,7 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground rounded-xl"
+              className="rounded-xl bg-white text-black hover:bg-white/95 data-[state=open]:bg-white data-[state=open]:text-black"
             >
               <Avatar className="h-9 w-9 rounded-xl">
                 <AvatarImage src={avatarUrl} alt={name} />
@@ -139,13 +139,13 @@ export function NavUser() {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{name}</span>
-                <span className="truncate text-xs text-muted-foreground">{email}</span>
+                <span className="truncate text-xs text-black/70">{email}</span>
               </div>
-              <ChevronsUpDownIcon className="ml-auto size-4" />
+              <ChevronsUpDownIcon className="ml-auto size-4 text-black/70" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-72 rounded-2xl p-2 bg-background text-foreground ring-1 ring-sidebar-border"
+            className="w-72 rounded-2xl bg-background p-2 text-foreground ring-1 ring-[#D4B483]/20"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -164,41 +164,36 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="h-11 rounded-xl hover:bg-muted hover:text-foreground">
-                <SparklesIcon
-                />
+              <DropdownMenuItem className="h-11 rounded-xl hover:bg-[#D4B483]/10 hover:text-foreground">
+                <SparklesIcon className="text-[#D4B483]" />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="h-11 rounded-xl hover:bg-muted hover:text-foreground">
-                <BadgeCheckIcon
-                />
+              <DropdownMenuItem className="h-11 rounded-xl hover:bg-[#D4B483]/10 hover:text-foreground">
+                <BadgeCheckIcon className="text-[#D4B483]" />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem className="h-11 rounded-xl hover:bg-muted hover:text-foreground">
-                <CreditCardIcon
-                />
+              <DropdownMenuItem className="h-11 rounded-xl hover:bg-[#D4B483]/10 hover:text-foreground">
+                <CreditCardIcon className="text-[#D4B483]" />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem className="h-11 rounded-xl hover:bg-muted hover:text-foreground">
-                <BellIcon
-                />
+              <DropdownMenuItem className="h-11 rounded-xl hover:bg-[#D4B483]/10 hover:text-foreground">
+                <BellIcon className="text-[#D4B483]" />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               disabled={!session || loggingOut}
-              className="cursor-pointer h-11 rounded-xl hover:bg-muted hover:text-foreground"
+              className="h-11 cursor-pointer rounded-xl hover:bg-[#D4B483]/10 hover:text-foreground"
               onSelect={(e) => {
                 e.preventDefault()
                 void handleLogout()
               }}
             >
-              <LogOutIcon
-              />
+              <LogOutIcon className="text-[#D4B483]" />
               {loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
             </DropdownMenuItem>
           </DropdownMenuContent>
