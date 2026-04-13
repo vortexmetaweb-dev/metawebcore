@@ -4,6 +4,7 @@ import { Manrope } from "next/font/google"
 import { useRouter } from "next/router"
 import { Command } from "lucide-react"
 import * as React from "react"
+import HCaptcha from "@hcaptcha/react-hcaptcha"
 
 import { Button } from "@/SaaS/dashboard/components/ui/button"
 
@@ -80,6 +81,51 @@ export default function AuthPage() {
   )
   const [error, setError] = React.useState<string | null>(null)
   const [info, setInfo] = React.useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null)
+  const [captchaVerified, setCaptchaVerified] = React.useState(false)
+  const [captchaBusy, setCaptchaBusy] = React.useState(false)
+
+  const hcaptchaSiteKey = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY ?? ""
+
+  const resetCaptcha = React.useCallback(() => {
+    setCaptchaToken(null)
+    setCaptchaVerified(false)
+  }, [])
+
+  const verifyCaptcha = React.useCallback(async () => {
+    if (captchaVerified) return true
+    if (!hcaptchaSiteKey) {
+      setError("Falta configurar hCaptcha (site key).")
+      return false
+    }
+    if (!captchaToken) {
+      setError("Completa el captcha para continuar.")
+      return false
+    }
+
+    setCaptchaBusy(true)
+    try {
+      const res = await fetch("/api/verify-hcaptcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: captchaToken }),
+      })
+      const data = (await res.json()) as { ok: boolean; error?: string }
+      if (!res.ok || !data.ok) {
+        setError(data.error ?? "Captcha inválido")
+        resetCaptcha()
+        return false
+      }
+      setCaptchaVerified(true)
+      return true
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Captcha verify failed")
+      resetCaptcha()
+      return false
+    } finally {
+      setCaptchaBusy(false)
+    }
+  }, [captchaToken, captchaVerified, hcaptchaSiteKey, resetCaptcha])
 
   React.useEffect(() => {
     try {
@@ -110,6 +156,7 @@ export default function AuthPage() {
   async function signInWithProvider(provider: "github" | "google") {
     setError(null)
     setInfo(null)
+    if (!(await verifyCaptcha())) return
     setBusy(provider)
 
     try {
@@ -136,6 +183,7 @@ export default function AuthPage() {
     e.preventDefault()
     setError(null)
     setInfo(null)
+    if (!(await verifyCaptcha())) return
     setBusy("email")
 
     try {
@@ -269,10 +317,28 @@ export default function AuthPage() {
                   className="h-10 w-full rounded-md border border-[#cfd9d8] bg-white px-3 text-sm text-[#171f25] outline-none ring-offset-white placeholder:text-[#64787c] focus-visible:border-[#87a9a6] focus-visible:ring-4 focus-visible:ring-[#87a9a6]/30"
                 />
 
+                {hcaptchaSiteKey ? (
+                  <div className="flex justify-center">
+                    <HCaptcha
+                      sitekey={hcaptchaSiteKey}
+                      onVerify={(token) => {
+                        setCaptchaToken(token)
+                        setCaptchaVerified(false)
+                      }}
+                      onExpire={resetCaptcha}
+                      onError={resetCaptcha}
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-[#cfd9d8] bg-white px-4 py-3 text-sm text-[#171f25]">
+                    Falta configurar hCaptcha.
+                  </div>
+                )}
+
                 <Button
                   type="submit"
                   className="h-10 w-full bg-[#171f25] text-white hover:bg-[#171f25]/90"
-                  disabled={busy !== null}
+                  disabled={busy !== null || captchaBusy || !captchaToken}
                 >
                   {busy === "email" ? "Enviando…" : "Continuar con Email"}
                 </Button>
@@ -294,7 +360,7 @@ export default function AuthPage() {
                 variant="outline"
                 className="h-10 w-full border-[#cfd9d8] bg-white text-[#171f25] hover:bg-[#cfd9d8]/40"
                 onClick={() => signInWithProvider("github")}
-                disabled={busy !== null}
+                disabled={busy !== null || captchaBusy || !captchaToken}
               >
                 <GitHubIcon className="mr-2 size-4" />
                 {busy === "github" ? "Conectando…" : "GitHub"}
@@ -305,7 +371,7 @@ export default function AuthPage() {
                 variant="outline"
                 className="h-10 w-full border-[#cfd9d8] bg-white text-[#171f25] hover:bg-[#cfd9d8]/40"
                 onClick={() => signInWithProvider("google")}
-                disabled={busy !== null}
+                disabled={busy !== null || captchaBusy || !captchaToken}
               >
                 <GoogleIcon className="mr-2 size-4" />
                 {busy === "google" ? "Conectando…" : "Google"}

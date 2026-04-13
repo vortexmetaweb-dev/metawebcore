@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.60",
+    "@hcaptcha/react-hcaptcha": "^2.0.2",
     "@material/web": "^2.4.1",
     "@supabase/supabase-js": "^2.101.1",
     "ai": "^6.0.143",
