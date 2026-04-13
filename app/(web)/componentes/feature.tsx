@@ -14,13 +14,9 @@ function CardIllustration({
 }: {
   type: "copy" | "build" | "streamline"
 }) {
-  const common =
-    "absolute inset-0 rounded-[28px] bg-[radial-gradient(700px_circle_at_20%_10%,rgba(212,180,131,0.12),transparent_55%),linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_45%)]"
-
   if (type === "copy") {
     return (
       <div className="relative h-40 w-full overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
-        <div aria-hidden="true" className={common} />
         <Image
           alt="care"
           className="relative h-full w-full object-cover opacity-90"
@@ -33,7 +29,6 @@ function CardIllustration({
   if (type === "build") {
     return (
       <div className="relative h-40 w-full overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
-        <div aria-hidden="true" className={common} />
         <svg
           className="relative mx-auto mt-5 h-30 w-[88%] text-white/70"
           viewBox="0 0 460 170"
@@ -136,7 +131,6 @@ function CardIllustration({
 
   return (
     <div className="relative h-40 w-full overflow-hidden rounded-[28px] border border-white/10 bg-white/5">
-      <div aria-hidden="true" className={common} />
       <svg
         className="relative mx-auto mt-6 h-28 w-[88%] text-white/70"
         viewBox="0 0 460 170"
@@ -326,12 +320,8 @@ export default function Feature() {
   return (
     <section
       id="funcionalidades"
-      className="relative w-full overflow-hidden bg-black text-white"
+      className="w-full bg-black text-white"
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_circle_at_15%_15%,rgba(212,180,131,0.10),transparent_55%),radial-gradient(900px_circle_at_90%_70%,rgba(255,255,255,0.035),transparent_60%),linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_40%)]"
-      />
       <div className="mx-auto w-full max-w-6xl px-6 py-14 sm:py-16">
         <motion.div 
           initial="initial"

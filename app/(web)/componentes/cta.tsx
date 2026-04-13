@@ -12,15 +12,7 @@ export default function CTA() {
   }
 
   return (
-    <section className="relative w-full overflow-hidden bg-black py-20 text-white sm:py-28">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(700px_180px_at_50%_0%,rgba(212,180,131,0.55),transparent_60%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_90%,rgba(212,180,131,0.10),transparent_60%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent_45%)]"
-      />
+    <section className="w-full bg-black py-20 text-white sm:py-28">
       <div className="mx-auto w-full max-w-6xl px-6 text-center">
         <motion.h2 
           variants={fadeInUp}

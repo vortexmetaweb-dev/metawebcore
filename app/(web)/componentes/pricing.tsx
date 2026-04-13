@@ -57,11 +57,7 @@ export default function Pricing() {
   }
 
   return (
-    <section id="pricing" className="relative w-full overflow-hidden bg-black py-20 text-white sm:py-32">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_circle_at_85%_15%,rgba(212,180,131,0.10),transparent_60%),radial-gradient(700px_circle_at_10%_70%,rgba(255,255,255,0.03),transparent_55%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent_45%)]"
-      />
+    <section id="pricing" className="w-full bg-black py-20 text-white sm:py-32">
       <div className="mx-auto w-full max-w-6xl px-6">
         <div className="text-center mb-16">
           <motion.h2 

@@ -17,7 +17,6 @@ export default function Hero() {
   })
 
   const yParallax = useTransform(scrollYProgress, [0, 1], ["0%", "30%"])
-  const opacityScroll = useTransform(scrollYProgress, [0, 0.8], [1, 0])
   const scaleScroll = useTransform(scrollYProgress, [0, 1], [1, 1.05])
   const yTextParallax = useTransform(scrollYProgress, [0, 1], [0, -50])
 
@@ -41,19 +40,6 @@ export default function Hero() {
       id="productos"
       className="relative flex min-h-[90vh] w-full items-center overflow-hidden bg-black text-white"
     >
-      <motion.div
-        style={{ opacity: opacityScroll }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_20%,rgba(255,255,255,0.06),transparent_55%),radial-gradient(780px_circle_at_80%_40%,rgba(255,255,255,0.035),transparent_60%),linear-gradient(to_bottom,rgba(255,255,255,0.04),transparent_35%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_circle_at_50%_100%,rgba(212,180,131,0.08),transparent_55%),radial-gradient(900px_circle_at_0%_0%,rgba(255,255,255,0.03),transparent_50%),linear-gradient(to_bottom,rgba(0,0,0,0),rgba(0,0,0,0.75))]"
-      />
-
       <div className="relative mx-auto w-full max-w-6xl px-6 py-16 sm:py-20">
         <div className="grid items-center gap-12 lg:grid-cols-12">
           <motion.div 

@@ -39,11 +39,7 @@ export default function Procesos() {
   }
 
   return (
-    <section id="procesos" className="relative w-full overflow-hidden bg-black py-20 text-white sm:py-32">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_circle_at_50%_0%,rgba(212,180,131,0.10),transparent_60%),radial-gradient(700px_circle_at_10%_85%,rgba(255,255,255,0.03),transparent_55%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent_45%)]"
-      />
+    <section id="procesos" className="w-full bg-black py-20 text-white sm:py-32">
       <div className="mx-auto w-full max-w-6xl px-6">
         <div className="text-center mb-20">
           <motion.h2 
@@ -62,9 +58,6 @@ export default function Procesos() {
         </div>
 
         <div className="relative grid gap-12 md:grid-cols-4">
-          {/* Línea conectora decorativa en desktop */}
-          <div className="hidden md:block absolute top-12 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#D4B483]/20 to-transparent" />
-          
           {steps.map((step, index) => (
             <motion.div
               key={step.id}

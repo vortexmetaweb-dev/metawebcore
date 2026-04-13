@@ -10,10 +10,6 @@ export default function Banner() {
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
       className="relative w-full overflow-hidden bg-[#D4B483] text-white border-b border-black/10"
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(700px_circle_at_50%_-10%,rgba(255,255,255,0.35),transparent_55%)]"
-      />
       <div className="relative mx-auto w-full max-w-6xl px-6 py-1.5">
         <div className="flex items-center justify-center gap-3 text-center">
           <motion.span 
