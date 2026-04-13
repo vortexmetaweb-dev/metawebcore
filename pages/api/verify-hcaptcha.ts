@@ -1,6 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
-type VerifyResponse = { ok: true } | { ok: false; error: string }
+type VerifyResponse =
+  | { ok: true }
+  | { ok: false; error: string; codes?: string[] }
+
+type HcaptchaVerifyResult = {
+  success?: boolean
+  "error-codes"?: string[]
+}
+
+function messageFromCodes(codes: string[] | undefined) {
+  const list = codes ?? []
+  if (list.includes("missing-input-secret")) return "Falta el secret del captcha"
+  if (list.includes("invalid-input-secret")) return "Secret del captcha inválido"
+  if (list.includes("missing-input-response")) return "Falta el token del captcha"
+  if (list.includes("invalid-input-response")) return "Captcha expirado o inválido"
+  if (list.includes("bad-request")) return "Solicitud inválida"
+  if (list.includes("sitekey-secret-mismatch")) return "Site key/secret no coinciden"
+  return "Captcha inválido"
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,19 +45,9 @@ export default async function handler(
     return res.status(400).json({ ok: false, error: "Missing token" })
   }
 
-  const remoteip =
-    typeof req.headers["x-forwarded-for"] === "string"
-      ? req.headers["x-forwarded-for"].split(",")[0]?.trim()
-      : Array.isArray(req.headers["x-forwarded-for"])
-        ? req.headers["x-forwarded-for"][0]?.split(",")[0]?.trim()
-        : typeof req.socket.remoteAddress === "string"
-          ? req.socket.remoteAddress
-          : undefined
-
   const form = new URLSearchParams()
   form.set("secret", secret)
   form.set("response", token)
-  if (remoteip) form.set("remoteip", remoteip)
 
   try {
     const verifyRes = await fetch("https://hcaptcha.com/siteverify", {
@@ -48,10 +56,13 @@ export default async function handler(
       body: form.toString(),
     })
 
-    const data = (await verifyRes.json()) as { success?: boolean }
+    const data = (await verifyRes.json()) as HcaptchaVerifyResult
 
     if (!data?.success) {
-      return res.status(400).json({ ok: false, error: "Captcha inválido" })
+      const codes = data?.["error-codes"]
+      return res
+        .status(400)
+        .json({ ok: false, error: messageFromCodes(codes), codes })
     }
 
     return res.status(200).json({ ok: true })
@@ -59,4 +70,3 @@ export default async function handler(
     return res.status(500).json({ ok: false, error: "Captcha verify failed" })
   }
 }
-
