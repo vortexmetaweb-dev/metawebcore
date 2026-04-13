@@ -7,7 +7,7 @@ export default function Banner() {
     <motion.section 
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
       className="relative w-full overflow-hidden bg-[#D4B483] text-white border-b border-black/10"
     >
       <div

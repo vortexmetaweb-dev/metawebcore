@@ -34,7 +34,7 @@ export default function Navbar() {
   const navVariants = {
     initial: { y: -20, opacity: 0 },
     animate: { y: 0, opacity: 1 },
-    transition: { duration: 0.5, ease: "easeOut" }
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }
   }
 
   return (

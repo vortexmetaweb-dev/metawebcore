@@ -24,7 +24,7 @@ export default function Hero() {
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: "easeOut" }
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }
   }
 
   const staggerContainer = {
@@ -112,7 +112,11 @@ export default function Hero() {
             style={{ y: yParallax, scale: scaleScroll }}
             initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
             animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            transition={{
+              duration: 0.8,
+              delay: 0.2,
+              ease: [0.16, 1, 0.3, 1] as const,
+            }}
           >
             <div className="relative mx-auto w-full max-w-xl">
               <Image
@@ -129,4 +133,3 @@ export default function Hero() {
     </section>
   )
 }
-

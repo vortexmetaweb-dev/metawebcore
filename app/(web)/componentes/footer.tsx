@@ -9,7 +9,7 @@ export default function Footer() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: false, margin: "-120px" }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
       className="w-full bg-black text-white"
     >
       <div className="mx-auto w-full max-w-6xl px-6 pb-10 pt-16">

@@ -45,7 +45,7 @@ export default function FAQ() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, margin: "-120px" }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
           >
             <h2 className="text-balance text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               Preguntas frecuentes
@@ -68,7 +68,11 @@ export default function FAQ() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, margin: "-120px" }}
-            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            transition={{
+              duration: 0.6,
+              delay: 0.1,
+              ease: [0.16, 1, 0.3, 1] as const,
+            }}
           >
             <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/3">
               {faqs.map((item, index) => {
@@ -117,7 +121,10 @@ export default function FAQ() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          transition={{
+                            duration: 0.22,
+                            ease: [0.16, 1, 0.3, 1] as const,
+                          }}
                           className="overflow-hidden"
                         >
                           <div className="px-5 pb-6 text-sm leading-relaxed text-white/70">
