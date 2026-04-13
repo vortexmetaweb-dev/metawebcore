@@ -1,10 +1,13 @@
 import { createClient, type Session } from "@supabase/supabase-js"
 import Link from "next/link"
+import { Manrope } from "next/font/google"
 import { useRouter } from "next/router"
 import { Command } from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/SaaS/dashboard/components/ui/button"
+
+const manrope = Manrope({ subsets: ["latin"] })
 
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -177,24 +180,26 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="grid min-h-screen w-full bg-white text-[#171f25] md:grid-cols-2">
+    <div className={`${manrope.className} grid min-h-screen w-full bg-white text-[#171f25] md:grid-cols-2`}>
       <aside className="relative hidden p-10 md:flex md:flex-col">
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(135deg,#171f25_0%,#647b84_28%,#87a9a6_62%,#cfd9d8_100%)]"
+          className="absolute inset-0 bg-[linear-gradient(135deg,#000000_0%,#0B0B0B_45%,#141414_100%)]"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(1000px_circle_at_15%_10%,rgba(23,31,37,0.35),transparent_60%)]"
+          className="absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_10%,rgba(212,180,131,0.22),transparent_55%)]"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(900px_circle_at_90%_25%,rgba(135,169,166,0.55),transparent_55%)]"
+          className="absolute inset-0 bg-[radial-gradient(900px_circle_at_85%_25%,rgba(255,255,255,0.06),transparent_60%)]"
         />
 
         <div className="relative z-10 flex items-center gap-2 text-sm text-white/80 font-semibold">
           <Command className="size-5" />
-          <span>MetaWeb Core</span>
+          <span>
+            MetaWeb <span className="text-[#D4B483]">Core</span>
+          </span>
         </div>
 
         <div className="flex-1" />
@@ -202,7 +207,7 @@ export default function AuthPage() {
         <blockquote className="relative z-10 max-w-md text-sm leading-relaxed text-white/80">
           Finanzas personales
           <span className="block pt-2 font-medium text-white/80">
-            MetaWeb Dev Solutions 
+            MetaWeb Dev Solutions
           </span>
         </blockquote>
       </aside>

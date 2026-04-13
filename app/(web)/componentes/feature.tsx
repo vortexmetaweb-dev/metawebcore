@@ -247,7 +247,7 @@ function FeatureCard({
     hover: { 
       y: -8, 
       scale: 1.02,
-      transition: { duration: 0.3, ease: "easeInOut" } 
+      transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const } 
     }
   }
 
